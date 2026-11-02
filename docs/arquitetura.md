@@ -251,7 +251,23 @@ Todo repositório precisa ser testável na máquina local, em três níveis ([AD
 
 ---
 
-## 8. Ambientes
+## 8. Assets, eventos e governança
+
+A plataforma é **orientada a assets** ([ADR-0015](decisoes/0015-assets-e-eventos.md)): cada dado tem nome (`<camada>.<fonte>.<entidade>`), dono e contrato, e publica o evento `AssetUpdated` no barramento `lab-data-<env>-assets` quando fica pronto. Quem depende dele reage ao evento.
+
+```
+Step Functions (ingestão) ──AssetUpdated──► EventBridge lab-data-<env>-assets ──regra──► consumidores
+                                                    │ archive (90 dias, replay)           (dbt, Airflow via SQS)
+```
+
+- **Contrato de dados por asset** no `assets.yml` de cada repositório ([ADR-0016](decisoes/0016-contrato-de-dados-por-asset.md)).
+- **Políticas** de classificação, colunas técnicas, quarentena, retenção, segredos e evolução de schema: [governanca.md](governanca.md).
+- **Auditoria** da conta com CloudTrail ([ADR-0017](decisoes/0017-auditoria-cloudtrail.md)).
+- Detalhes do evento e de como reagir a ele: [eventos.md](eventos.md).
+
+---
+
+## 9. Ambientes
 
 | Ambiente | Uso | Estado |
 |---|---|---|
@@ -262,7 +278,7 @@ Cada repositório tem um state por ambiente (`<componente>/<env>/terraform.tfsta
 
 ---
 
-## 9. Custo estimado
+## 10. Custo estimado
 
 Valores aproximados por mês, no ambiente `dev`, com uso de laboratório.
 

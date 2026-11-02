@@ -55,6 +55,8 @@ Os repositórios das camadas 7 em diante (orquestração, warehouse, analytics, 
 | [docs/arquitetura.md](docs/arquitetura.md) | Camadas, repositórios, contratos, componentes plugáveis, testes locais, custo |
 | [docs/convencoes.md](docs/convencoes.md) | Repositórios, nomes, tags, camadas de dados, Terraform |
 | [docs/contratos.md](docs/contratos.md) | Parâmetros SSM que cada repositório publica |
+| [docs/governanca.md](docs/governanca.md) | Políticas do dado: contrato por asset, classificação, colunas técnicas, quarentena, retenção, segredos, evolução de schema, auditoria |
+| [docs/eventos.md](docs/eventos.md) | Assets, nome dos assets e o evento `AssetUpdated` |
 | [docs/decisoes/](docs/decisoes/README.md) | ADRs: cada decisão e o motivo dela |
 | [docs/setup/ambiente-local.md](docs/setup/ambiente-local.md) | Ferramentas locais e acesso à AWS pela linha de comando |
 

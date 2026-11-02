@@ -11,7 +11,7 @@ Regras que todo repositório, recurso, tabela e fonte de dados da plataforma seg
 | Estrutura | `infra/` (Terraform + `tests/`), `src/`, `tests/`, `local/`, `docs/`, `Makefile`, `CLAUDE.md`, `README.md` ([arquitetura.md §4](arquitetura.md#4-repositórios)) |
 | Makefile | Alvos padrão: `help`, `whoami`, `fmt`, `validate`, `test`, `init`, `plan`, `apply`, `destroy`; e `local-up`, `local-test`, `local-down` quando houver ambiente local |
 | Dependência entre repositórios | Só pelos contratos no SSM ([contratos.md](contratos.md)), nunca pelo state ou pelo código de outro repositório |
-| Branch principal | `main` |
+| Branches | `main` (protegida, estado aplicado na conta) e `develop` (integração, push direto); ver [Branches](#branches) |
 | README | Sempre com a seção **"Recursos na AWS"** (ver abaixo) e a seção **"Qualidade"** |
 | Qualidade | `.pre-commit-config.yaml` + CI com o job `pre-commit` + ruleset `proteger-main` (ver abaixo) |
 
@@ -47,6 +47,26 @@ Regras:
 - Referência: [data-foundation/README.md](../../data-foundation/README.md#recursos-na-aws).
 
 **Plataforma × domínio:** a plataforma é o que todo domínio usa (buckets, catálogo, workgroup, orquestrador, alertas). O domínio é o que é específico de uma área (fontes, transformações e modelos de dados dela). Dentro de cada repositório, o código é organizado por domínio, por exemplo `data-ingestion/src/financeiro/bcb/`.
+
+## Branches
+
+Fluxo com uma branch de integração ([ADR-0018](decisoes/0018-fluxo-de-branches-com-develop.md)):
+
+```
+desenvolvimento ──► develop (push direto) ──► main (PR no deploy geral) ──► apply na conta
+```
+
+| Branch | Recebe | Travas |
+|---|---|---|
+| `develop` | Push direto, commit a commit | pre-commit em todo commit, CI em todo push |
+| `main` | Só PR `develop → main`, no deploy geral | Ruleset `proteger-main`: PR, CI obrigatório, sem force push |
+
+- O que está na `main` está aplicado na conta.
+- No deploy geral, os repositórios vão para a `main` na ordem de dependência: `data-foundation` → `data-lakehouse` → `data-ingestion`.
+
+## Dados: governança e assets
+
+As políticas sobre o dado (contrato por asset, classificação, colunas técnicas, quarentena, retenção, segredos, evolução de schema) estão em [governanca.md](governanca.md). O nome dos assets e o evento `AssetUpdated` estão em [eventos.md](eventos.md).
 
 ## Commits
 
@@ -104,6 +124,8 @@ Aplicadas automaticamente pelo `default_tags` do provider de cada repositório. 
 | `ManagedBy` | `terraform` | Indica que não deve ser alterado no console |
 | `Repository` | nome do repositório, ex.: `data-foundation` | Aponta para o código de origem |
 | `Domain` | ex.: `financeiro` | Agrupa o custo por domínio (só em recursos de domínio) |
+| `Layer` | `bronze`, `silver`, `gold`, `athena-results` | Camada de dado do recurso |
+| `Classification` | `publico`, `interno`, `confidencial`, `pessoal` | Classificação do dado ([governança](governanca.md#2-classificação)); em recursos que guardam dados de um asset |
 
 ## Camadas de dados (arquitetura medalhão)
 

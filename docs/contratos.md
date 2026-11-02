@@ -19,6 +19,8 @@ Publicado por `data-foundation/infra/contract.tf`.
 | `/lab-data/<env>/foundation/account_id` | ID da conta AWS | todos |
 | `/lab-data/<env>/foundation/region` | Região da plataforma | todos |
 | `/lab-data/<env>/foundation/alerts_topic_arn` | ARN do tópico SNS de alertas | `data-ingestion` (falhas de Lambda e Step Functions) |
+| `/lab-data/<env>/foundation/assets_event_bus_name` | Nome do barramento de eventos dos assets (etapa 1b) | todo produtor e consumidor de assets ([eventos](eventos.md)) |
+| `/lab-data/<env>/foundation/assets_event_bus_arn` | ARN do barramento de eventos dos assets (etapa 1b) | permissões IAM de quem publica |
 
 ## data-lakehouse
 
