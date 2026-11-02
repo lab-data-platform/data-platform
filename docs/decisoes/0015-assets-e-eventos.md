@@ -6,7 +6,7 @@
 
 ## Contexto
 
-Os dados da plataforma formam uma cadeia de dependências: `api.bcb.sgs → bronze.bcb.sgs → silver → gold → DW`. Disparar cada passo por horário acopla tudo à hora em que o anterior *costuma* terminar. O usuário quer definir os assets e disparar eventos quando um asset é atualizado, de forma organizada.
+Os dados da plataforma formam uma cadeia de dependências: `source.bcb.sgs → bronze.bcb.sgs → silver → gold → DW`. Disparar cada passo por horário acopla tudo à hora em que o anterior *costuma* terminar. O usuário quer definir os assets e disparar eventos quando um asset é atualizado, de forma organizada.
 
 O Glue tem recursos parecidos, mas cada um cobre só uma parte: os eventos do Data Catalog são técnicos (mudança de estrutura, e não de dado), os Glue Workflows só orquestram jobs do Glue e os assets do SageMaker Unified Studio são de governança, e não de disparo.
 

@@ -7,7 +7,7 @@
   "required": ["asset", "versao_contrato", "particao", "local", "run_id", "produzido_em"],
   "additionalProperties": false,
   "properties": {
-    "asset": { "type": "string", "pattern": "^(api|bronze|silver|gold|dw|dashboard)\\.[a-z0-9_]+(\\.[a-z0-9_]+)?$" },
+    "asset": { "type": "string", "pattern": "^(source|bronze|silver|gold|dw|dashboard)\\.[a-z0-9_]+(\\.[a-z0-9_]+)?$" },
     "versao_contrato": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
     "particao": { "type": "string", "minLength": 1 },
     "registros": { "type": "integer", "minimum": 0 },

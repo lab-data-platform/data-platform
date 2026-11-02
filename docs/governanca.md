@@ -17,7 +17,7 @@ assets:
     descricao: Séries do SGS como vieram da API, por série e data de ingestão
     dono: data-ingestion                  # repositório responsável
     classificacao: publico                # ver seção 2
-    depende_de: [api.bcb.sgs]
+    depende_de: [source.bcb.sgs]
     produzido_por: lab-data-dev-ingest-bcb
     local: s3://lab-data-dev-bronze-<account_id>/bcb/sgs/
     tabela: lab_data_dev_bronze.bcb_sgs

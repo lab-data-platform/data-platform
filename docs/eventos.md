@@ -3,7 +3,7 @@
 A plataforma é **orientada a assets** ([ADR-0015](decisoes/0015-assets-e-eventos.md)): cada dado tem nome, dono e lugar, e quando ele é atualizado, **publica um evento**. Quem depende dele reage ao evento, sem depender de horário.
 
 ```
-asset[api.bcb.sgs] ──► asset[bronze.bcb.sgs] ──► asset[silver.bcb.indicadores] ──► asset[gold.indicador_diario]
+asset[source.bcb.sgs] ──► asset[bronze.bcb.sgs] ──► asset[silver.bcb.indicadores] ──► asset[gold.indicador_diario]
    (externo)            (data-ingestion)           (dbt, camada 5)                    (dbt, camada 5)
 ```
 
@@ -13,7 +13,7 @@ asset[api.bcb.sgs] ──► asset[bronze.bcb.sgs] ──► asset[silver.bcb.in
 
 | Camada | Exemplo | Produzido por |
 |---|---|---|
-| `api` (fonte externa) | `api.bcb.sgs` | ninguém da plataforma |
+| `source` (fonte externa: API, arquivo, banco, FTP...) | `source.bcb.sgs` | ninguém da plataforma |
 | `bronze` | `bronze.bcb.sgs` | `data-ingestion` |
 | `silver` | `silver.bcb.indicadores` | dbt do lake |
 | `gold` | `gold.indicador_diario` | dbt do lake |

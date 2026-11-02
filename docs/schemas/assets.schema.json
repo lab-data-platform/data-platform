@@ -15,7 +15,7 @@
       "required": ["id", "tipo", "descricao", "dono", "classificacao", "depende_de", "versao_contrato"],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^(api|bronze|silver|gold|dw|dashboard)\\.[a-z0-9_]+(\\.[a-z0-9_]+)?$" },
+        "id": { "type": "string", "pattern": "^(source|bronze|silver|gold|dw|dashboard)\\.[a-z0-9_]+(\\.[a-z0-9_]+)?$" },
         "tipo": { "enum": ["fonte-externa", "bronze", "silver", "gold", "dw", "dashboard"] },
         "descricao": { "type": "string", "minLength": 10 },
         "dono": { "type": "string" },
