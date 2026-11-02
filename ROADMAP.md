@@ -13,14 +13,14 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | | |
 |---|---|
 | **Camada atual** | 2 — Repositório e CI básico (todos os repositórios) |
-| **Situação** | Camada 1 concluída. Os 4 repositórios têm `git init`, mas nenhum commit ainda |
-| **Próximo passo** | Primeiro commit de cada repositório e decidir a hospedagem no GitHub |
+| **Situação** | Os 4 repositórios estão publicados em [github.com/lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
+| **Próximo passo** | CI básico (GitHub Actions) e proteção da branch `main` |
 | **Última atualização** | 2026-11-02 |
 
 ## ⏭️ Próximos passos
 
-1. [ ] Camada 2: primeiro commit de cada repositório.
-2. [ ] Camada 2: decidir a hospedagem (GitHub público ou privado) e configurar o CI básico.
+1. [ ] Camada 2: GitHub Actions com `terraform fmt -check`, `validate` e `test`.
+2. [ ] Camada 2: proteção da branch `main` e `pre-commit` com detector de segredos.
 3. [ ] Camada 3: confirmar o escopo do `data-lakehouse` antes de começar.
 
 ## ⚠️ Pendências e bloqueios
@@ -99,14 +99,16 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Entregáveis**
 - [x] `git init` local nos 4 repositórios, branch `main` ([ADR-0010](docs/decisoes/0010-polyrepo.md))
-- [ ] Primeiro commit de cada repositório
-- [ ] Repositórios no GitHub e proteção da branch `main`
+- [x] Primeiro commit de cada repositório, no padrão Conventional Commits em português
+- [x] Identidade Git pessoal separada da do trabalho (`includeIf` no `~/.gitconfig` + chave SSH própria)
+- [x] Repositórios **públicos** na organização [lab-data-platform](https://github.com/lab-data-platform)
+- [ ] Proteção da branch `main`
 - [ ] GitHub Actions: `terraform fmt -check`, `validate` e `test` e, conforme o código existir, lint de Python (ruff) e `dbt parse`
 - [ ] `pre-commit` local com os mesmos checks, mais um detector de segredos (ex.: gitleaks)
 
 **Pronto quando:** um PR com Terraform mal formatado falha no CI.
 
-**Em aberto:** repositório público ou privado; o CI usa credenciais da AWS (OIDC) já aqui ou só na camada 12.
+**Em aberto:** o CI usa credenciais da AWS (OIDC) já aqui ou só na camada 12.
 
 ---
 
@@ -312,3 +314,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | ✅ Camada 1 concluída: assinatura de e-mail do tópico de alertas confirmada |
 | 2026-11-02 | Roadmap unificado: plano e acompanhamento num só arquivo, o `ROADMAP.md` |
 | 2026-11-02 | Padrão "Recursos na AWS" nos READMEs: serviço, recurso, finalidade, região, custo, código e link do console |
+| 2026-11-02 | Repositórios publicados na organização [lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
