@@ -12,17 +12,16 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 | | |
 |---|---|
-| **Camada atual** | 3 — Lakehouse (`data-lakehouse`) |
-| **Situação** | ✅ Etapa 3a (bronze) aplicada na conta e aprovada no smoke test. Silver (3b) e gold (3c) ainda não ligadas |
-| **Próximo passo** | Escolher a próxima etapa: ingestão (camada 4), que já pode gravar no bronze, ou silver (3b), que depende do ADR-0014 |
+| **Camada atual** | 4 — Ingestão (`data-ingestion`), com a preparação de governança |
+| **Situação** | Governança e etapa 1b (eventos e auditoria) prontas na `develop`, aguardando o deploy geral. Bronze (3a) no ar |
+| **Próximo passo** | Confirmar o escopo da etapa 4a (primeira fonte, formato no bronze, agendamento) |
 | **Última atualização** | 2026-11-02 |
 
 ## ⏭️ Próximos passos
 
-1. [x] Camada 2: GitHub Actions com `terraform fmt -check`, `validate` e `test` no `data-foundation`.
-2. [x] Camada 2: proteção da `main` no `data-foundation` (ruleset `proteger-main`).
-3. [x] Camada 2: `pre-commit` com detector de segredos e padrão de qualidade nos 4 repositórios.
-4. [ ] Camada 3: confirmar o escopo do `data-lakehouse` antes de começar.
+1. [ ] Camada 4: confirmar o escopo da etapa 4a (primeira fonte, formato no bronze, agendamento).
+2. [ ] Camada 4: implementar a 4a na `develop` do `data-ingestion`, já com contrato de dados, colunas técnicas, quarentena e `AssetUpdated`.
+3. [ ] Deploy geral: PR `develop → main` em cada repositório, na ordem `data-foundation` → `data-lakehouse` → `data-ingestion`, e `apply`.
 
 ## ⚠️ Pendências e bloqueios
 
@@ -31,6 +30,8 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | Redshift Serverless bloqueado no plano gratuito ([ADR-0013](docs/decisoes/0013-regiao-us-east-2.md)) | Camada 8 (DW) | Ao chegar na camada 8: upgrade da conta ou gold no Athena |
 | QuickSight bloqueado no plano gratuito | Camada 9 (Analytics) | Ao chegar na camada 9: upgrade da conta ou BI open source |
 | Budget de US$ 10/mês | Pode ficar apertado com EC2 (camada 7) | Antes da camada 7 |
+| Ativação das tags de custo negada à conta (só a conta gerenciadora da organização pode ativar) | Custo por `Component`/`Repository` indisponível no Cost Explorer | Junto com um eventual upgrade da conta |
+| Trilha do CloudTrail multirregião com a SCP `RegionFloor` | Pode falhar no primeiro apply da etapa 1b | No deploy geral: se falhar, `audit_multi_region = false` |
 | OIDC bloqueado no plano gratuito (SCP nega `iam:*OpenIDConnectProvider*`) | Deploy automático pelo GitHub Actions (camada 12) sem credencial temporária | Quando o deploy automático for retomado: usuário IAM dedicado ao CI ou upgrade da conta |
 
 ---
@@ -40,7 +41,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | # | Camada | Repositório | Status |
 |---|---|---|---|
 | 0 | [Ambiente local e acesso à AWS](#camada-0--ambiente-local-e-acesso-à-aws) | — | ✅ |
-| 1 | [Fundação](#camada-1--fundação) | `data-foundation` | ✅ |
+| 1 | [Fundação](#camada-1--fundação) | `data-foundation` | ✅ (1b 🟡) |
 | 2 | [Repositório e CI básico](#camada-2--repositório-e-ci-básico) | todos | ✅ |
 | 3 | [Lakehouse](#camada-3--lakehouse) | `data-lakehouse` | ⏳ |
 | 4 | [Ingestão](#camada-4--ingestão) | `data-ingestion` | ⬜ |
@@ -91,6 +92,14 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Em aberto:** valor do budget. US$ 10 serve até a camada 5; antes das camadas 7 e 8, avaliar US$ 25–30.
 
+**1b — Eventos e auditoria** 🟡 (na `develop`, entra no deploy geral)
+- [x] Barramento EventBridge `lab-data-dev-assets` com archive de 90 dias ([ADR-0015](docs/decisoes/0015-assets-e-eventos.md))
+- [x] Trilha CloudTrail `lab-data-dev-audit` com bucket próprio, validação de integridade e retenção de 365 dias ([ADR-0017](docs/decisoes/0017-auditoria-cloudtrail.md))
+- [x] Contrato: `assets_event_bus_name` e `assets_event_bus_arn`
+- [x] `terraform test` (11 casos) e `plan` com 12 recursos novos, 0 alterados
+- [ ] `make apply` no deploy geral
+- ~~Ativar as tags de custo~~: negado no plano gratuito (ver pendências)
+
 ---
 
 ### Camada 2 — Repositório e CI básico
@@ -109,6 +118,8 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [x] Padrão de qualidade nos 4 repositórios: job `pre-commit` no CI e ruleset `proteger-main` exigindo os checks ([convenções](docs/convencoes.md#padrão-de-qualidade))
 - [ ] Jobs por linguagem nos próximos repositórios, quando houver código (ruff para Python, `dbt parse`)
 - [x] `pre-commit` com gitleaks, credenciais AWS, chave privada e verificações gerais; testado com um token falso bloqueado
+- [x] Branch `develop` de integração nos 4 repositórios, com CI em todo push ([ADR-0018](docs/decisoes/0018-fluxo-de-branches-com-develop.md))
+- [x] Dependabot para actions e Terraform, abrindo PRs para a `develop`
 
 **Pronto quando:** um PR com Terraform mal formatado falha no CI.
 
@@ -155,14 +166,20 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Entregáveis**
 - [ ] Escopo confirmado e **fontes definidas** (é aqui que estudamos o dado: APIs, formato, volume, frequência, histórico)
+- [ ] **Contrato de dados** de cada asset no `assets.yml` (schema, dono, classificação, frescor, qualidade), validado pelo JSON Schema no pre-commit e no CI ([governança](docs/governanca.md#1-contrato-de-dados-por-asset))
+- [ ] **Colunas técnicas** (`_ingested_at`, `_source`, `_run_id`, `_source_file`) e manifesto ao lado de cada arquivo do bronze
+- [ ] **Validação e quarentena**: o que falha vai para `_quarantine/` e gera alerta
+- [ ] **Evento `AssetUpdated`** no fim de cada execução com sucesso ([eventos](docs/eventos.md))
+- [ ] Tag `Classification` nos recursos de cada asset
 - [ ] Módulo Terraform reutilizável `infra/modules/source/`: Lambda, role IAM, state machine e tabela bronze. Uma fonte nova é uma instância nova do módulo
 - [ ] Consumo dos contratos do `data-foundation` (alertas) e do `data-lakehouse` (bucket e database do bronze)
 - [ ] State machine no Step Functions por fonte: extrair → validar → registrar, com retry e alerta de falha
 - [ ] Código das Lambdas em `src/financeiro/<fonte>/`
 - [ ] Testes: pytest com moto (nível 1), Lambda, S3 e Step Functions no moto em Docker (nível 2) e execução real no `dev` (nível 3)
-- [ ] Carga histórica (backfill) e carga incremental, idempotentes
+- [ ] Carga histórica (backfill) e carga incremental, idempotentes ([governança](docs/governanca.md#5-idempotência-e-reprocessamento))
+- [ ] Runbooks: ingestão com falha, reprocessar um período, dado em quarentena
 
-**Pronto quando:** cada fonte tem dados no bronze, consultáveis pelo Athena, e uma reexecução do mesmo dia não duplica nada.
+**Pronto quando:** cada fonte tem dados no bronze, consultáveis pelo Athena, com contrato de dados declarado; uma reexecução do mesmo dia não duplica nada; o `AssetUpdated` chega ao barramento; dado inválido vai para a quarentena.
 
 **Em aberto:** quais fontes e entidades entram primeiro; agendamento provisório (EventBridge) até o Airflow existir.
 
@@ -266,6 +283,8 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [ ] `dbt source freshness` e testes de qualidade de negócio
 - [ ] Alarmes no CloudWatch (falha de Lambda, Step Functions e Airflow) publicando no tópico `lab-data-dev-alerts`
 - [ ] Dashboard operacional no CloudWatch
+- [ ] Alarme de frescor por asset, a partir do `frescor_esperado` do contrato e dos eventos `AssetUpdated`
+- [ ] Eventos do Glue Data Catalog capturados para auditoria (tabela alterada fora de um pipeline)
 
 **Pronto quando:** atraso ou falha em qualquer camada gera alerta por e-mail.
 
@@ -280,7 +299,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 **Entregáveis**
 - [ ] `dbt docs` dos dois projetos publicado como site estático
 - [ ] Catálogo de metadados (OpenMetadata ou SageMaker Unified Studio), com conectores para Glue, Athena, DW, dbt e Airflow
-- [ ] Linhagem de ponta a ponta, donos e glossário do domínio financeiro
+- [ ] Linhagem de ponta a ponta, donos e glossário do domínio financeiro, a partir dos `assets.yml`
 - [ ] Lake Formation, se ainda não tiver entrado na camada 3
 
 **Em aberto:** qual catálogo usar.
@@ -335,3 +354,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | ✅ Etapa 3a concluída: bronze aplicado na conta (19 recursos) e aprovado no smoke test |
 | 2026-11-02 | Deploy automático pelo GitHub Actions avaliado e adiado: o OIDC está bloqueado no plano gratuito |
 | 2026-11-02 | Camada 3: escopo confirmado; o lakehouse passa a ser construído camada a camada, começando pelo bronze (código pronto e testado no moto). S3 Tables na silver registrado como ADR-0014 (proposto) |
+| 2026-11-02 | Governança: contrato de dados por asset, eventos `AssetUpdated`, auditoria com CloudTrail e fluxo com `develop` (ADRs 0015 a 0018); etapa 1b da fundação pronta na `develop` |
