@@ -25,3 +25,7 @@ Cada decisão relevante vira um **ADR** (*Architecture Decision Record*): um reg
 | [0012](0012-testes-locais.md) | Testes locais em três níveis, com moto como emulador | Aceito |
 | [0013](0013-regiao-us-east-2.md) | Região us-east-2, imposta pelo plano gratuito da conta | Aceito |
 | [0014](0014-s3-tables-na-silver.md) | S3 Tables como armazenamento da silver | Proposto |
+| [0015](0015-assets-e-eventos.md) | Plataforma orientada a assets, com eventos AssetUpdated no EventBridge | Aceito |
+| [0016](0016-contrato-de-dados-por-asset.md) | Contrato de dados por asset, declarado em assets.yml | Aceito |
+| [0017](0017-auditoria-cloudtrail.md) | Trilha de auditoria da conta com CloudTrail | Aceito |
+| [0018](0018-fluxo-de-branches-com-develop.md) | Fluxo de branches com develop de integração | Aceito |
