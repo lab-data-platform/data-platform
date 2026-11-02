@@ -6,14 +6,14 @@
 
 ## Contexto
 
-Os dados da plataforma formam uma cadeia de dependências: `source.bcb.sgs → bronze.bcb.sgs → silver → gold → DW`. Disparar cada passo por horário acopla tudo à hora em que o anterior *costuma* terminar. O usuário quer definir os assets e disparar eventos quando um asset é atualizado, de forma organizada.
+Os dados da plataforma formam uma cadeia de dependências: `source.financeiro.bcb.sgs → bronze.financeiro.bcb.sgs → silver → gold → DW`. Disparar cada passo por horário acopla tudo à hora em que o anterior *costuma* terminar. O usuário quer definir os assets e disparar eventos quando um asset é atualizado, de forma organizada.
 
 O Glue tem recursos parecidos, mas cada um cobre só uma parte: os eventos do Data Catalog são técnicos (mudança de estrutura, e não de dado), os Glue Workflows só orquestram jobs do Glue e os assets do SageMaker Unified Studio são de governança, e não de disparo.
 
 ## Decisão
 
-- **Asset** = todo dado com nome, dono e lugar, nomeado `<camada>.<fonte>.<entidade>` ([eventos](../eventos.md)).
-- Cada repositório declara seus assets num `assets.yml`, que também é o contrato de dados ([ADR-0016](0016-contrato-de-dados-por-asset.md)).
+- **Asset** = todo dado com nome, dono e lugar. O nome passou a ter 4 partes, `<camada>.<domínio>.<fonte>.<entidade>`, no [ADR-0020](0020-padrao-de-assets.md) ([assets](../assets.md)).
+- Cada repositório declara seus assets em contratos ODCS, em `assets/` ([ADR-0020](0020-padrao-de-assets.md), que substitui o ADR-0016).
 - Quando um asset fica pronto (gravado e validado), o produtor publica o evento **`AssetUpdated`** no barramento EventBridge **`lab-data-<env>-assets`**, criado pelo `data-foundation`. Na Step Functions, é o último passo, com a integração nativa (sem Lambda).
 - O consumidor cria, no próprio repositório, a regra para os assets de que depende.
 - O barramento tem **archive** de 90 dias, para auditoria e replay.

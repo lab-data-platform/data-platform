@@ -1,6 +1,6 @@
 # ADR-0004 — Airflow em EC2 como orquestrador principal e Step Functions na ingestão
 
-- **Status:** Aceito
+- **Status:** Substituído por [ADR-0019](0019-orquestracao-serverless.md)
 - **Data:** 2026-11-02
 - **Camada:** Orquestração
 - **Substitui:** a decisão inicial (2026-10-30) de usar só Step Functions + EventBridge
