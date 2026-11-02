@@ -12,9 +12,9 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 | | |
 |---|---|
-| **Camada atual** | 3 — Lakehouse (`data-lakehouse`), a iniciar |
-| **Situação** | Camada 2 concluída: os 4 repositórios têm pre-commit, CI e `main` protegida |
-| **Próximo passo** | Confirmar o escopo da camada 3 (`data-lakehouse`) |
+| **Camada atual** | 3 — Lakehouse (`data-lakehouse`) |
+| **Situação** | Código da camada 3 pronto e testado nos níveis 1 e 2 (moto); `plan` com 37 recursos; falta aplicar na conta |
+| **Próximo passo** | Merge do PR, `make apply` e `make smoke-test` no `data-lakehouse` |
 | **Última atualização** | 2026-11-02 |
 
 ## ⏭️ Próximos passos
@@ -41,7 +41,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 0 | [Ambiente local e acesso à AWS](#camada-0--ambiente-local-e-acesso-à-aws) | — | ✅ |
 | 1 | [Fundação](#camada-1--fundação) | `data-foundation` | ✅ |
 | 2 | [Repositório e CI básico](#camada-2--repositório-e-ci-básico) | todos | ✅ |
-| 3 | [Lakehouse](#camada-3--lakehouse) | `data-lakehouse` | ⬜ |
+| 3 | [Lakehouse](#camada-3--lakehouse) | `data-lakehouse` | 🟡 |
 | 4 | [Ingestão](#camada-4--ingestão) | `data-ingestion` | ⬜ |
 | 5 | [Transformação no lake](#camada-5--transformação-no-lake) | `data-lakehouse` | ⬜ |
 | 6 | [Rede e segurança base](#camada-6--rede-e-segurança-base) | `data-foundation` | ⬜ |
@@ -117,21 +117,25 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 ### Camada 3 — Lakehouse
 
-⬜ **Não iniciada.** Repositório: `data-lakehouse`.
+🟡 **Código pronto; falta aplicar.** Repositório: `data-lakehouse`.
 
 **Objetivo:** criar o armazenamento e o catálogo de todas as camadas de dado.
 
 **Entregáveis**
-- [ ] Escopo confirmado
-- [ ] Buckets S3 `bronze`, `silver`, `gold` e `athena-results`: criptografia, bloqueio de acesso público, só TLS, lifecycle
-- [ ] Databases do Glue: `lab_data_dev_bronze`, `lab_data_dev_silver`, `lab_data_dev_gold`
-- [ ] Workgroup do Athena (engine v3, resultados no bucket próprio, limite de bytes por consulta)
-- [ ] Contrato no SSM: `/lab-data/dev/lakehouse/*` (buckets, databases, workgroup)
-- [ ] Testes: `terraform test` (nível 1), S3 no moto (nível 2) e uma tabela Iceberg de exemplo criada e consultada pelo Athena (nível 3)
+- [x] Escopo confirmado: um bucket por camada, Lake Formation só na camada 11, limite de 1 GB por consulta no Athena
+- [x] Módulo `data-bucket` reutilizável; buckets `bronze` (versionado), `silver`, `gold` e `athena-results` (expira em 7 dias), com criptografia, sem acesso público, só TLS, lifecycle
+- [x] Databases do Glue: `lab_data_dev_bronze`, `lab_data_dev_silver`, `lab_data_dev_gold`
+- [x] Workgroup `lab-data-dev` (engine v3, resultados no bucket próprio, limite de 1 GB por consulta)
+- [x] Contrato no SSM: 8 parâmetros em `/lab-data/dev/lakehouse/` ([contratos](docs/contratos.md#data-lakehouse)); consome o contrato do foundation
+- [x] Nível 1: `terraform test` (7 casos)
+- [x] Nível 2: stack inteiro aplicado no moto (37 recursos, 12 verificações), também no CI
+- [x] Armazenamento plugável por camada (`layer_storage`); S3 Tables na silver em avaliação ([ADR-0014](docs/decisoes/0014-s3-tables-na-silver.md))
+- [ ] `make apply` na conta real
+- [ ] Nível 3: `make smoke-test` (tabela Iceberg criada, consultada e apagada pelo workgroup)
 
 **Pronto quando:** dá para criar, consultar e apagar uma tabela Iceberg na silver usando só o workgroup da plataforma.
 
-**Em aberto:** Lake Formation agora ou só na camada 11; um bucket por camada ou um bucket com prefixos.
+**Em aberto:** S3 Tables na silver ([ADR-0014](docs/decisoes/0014-s3-tables-na-silver.md)), a decidir antes da camada 5.
 
 ---
 
@@ -320,3 +324,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Repositórios publicados na organização [lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
 | 2026-11-02 | Primeiro CI (GitHub Actions) e proteção da `main` no `data-foundation`, feitos pelo usuário com acompanhamento |
 | 2026-11-02 | ✅ Camada 2 concluída: pre-commit com gitleaks, job `pre-commit` no CI e `main` protegida nos 4 repositórios |
+| 2026-11-02 | Camada 3: escopo confirmado e código do lakehouse pronto, testado no moto; S3 Tables na silver registrado como ADR-0014 (proposto) |
