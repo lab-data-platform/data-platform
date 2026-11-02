@@ -165,7 +165,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Entregáveis**
 - [ ] Escopo confirmado e **fontes definidas** (é aqui que estudamos o dado: APIs, formato, volume, frequência, histórico)
-- [ ] **Estrutura do repositório** proposta no README (em revisão): `sdk/` (core, adapters, layers, governance, runtime), `sources/`, `assets/`, `pipelines/`, `infra/`, `tests/` e `local/`
+- [ ] **Estrutura do repositório** proposta no README (em revisão): `sdk/` (core, adapters, layers, governance, runtime), `extract/`, `assets/`, `pipelines/`, `infra/`, `tests/` e `local/`
 - [ ] **Contrato ODCS** de cada asset em `assets/<camada>/<domínio>/<fonte>/<entidade>.yml`, validado pelo `datacontract lint` e pelas extensões da plataforma no pre-commit e no CI ([assets](docs/assets.md#3-contrato-odcs))
 - [ ] **Lib de assets** `labdata.assets`, lida dos contratos, com os nomes físicos derivados do ID ([assets](docs/assets.md#4-lib-de-assets))
 - [ ] **Linhagem OpenLineage** em toda execução, com **Marquez local** para ver o grafo ([assets](docs/assets.md#5-linhagem-openlineage))
@@ -176,7 +176,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [ ] Módulo Terraform reutilizável `infra/modules/pipeline/`, instanciado para cada arquivo de `pipelines/**/*.yml`: Lambda, role IAM, state machine, agenda e tabela bronze
 - [ ] Consumo dos contratos do `data-foundation` (alertas) e do `data-lakehouse` (bucket e database do bronze)
 - [ ] State machine no Step Functions por fonte: extrair → validar → registrar, com retry e alerta de falha
-- [ ] Pacote Python `labdata` (`src/labdata/`): o `sdk` comum e as fontes em `sources/<domínio>/<fonte>/<entidade>.py`
+- [ ] Pacote Python `labdata` (`src/labdata/`): o `sdk` comum, a lib `assets` e a extração de cada fonte em `extract/<domínio>/<fonte>/<entidade>.py`
 - [ ] Testes: pytest com moto (nível 1), Lambda no container oficial da AWS + moto em Docker (nível 2) e execução real no `dev` (nível 3)
 - [ ] Carga histórica (backfill) e carga incremental, idempotentes ([governança](docs/governanca.md#5-idempotência-e-reprocessamento))
 - [ ] Runbooks: ingestão com falha, reprocessar um período, dado em quarentena
