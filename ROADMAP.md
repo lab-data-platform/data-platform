@@ -13,7 +13,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | | |
 |---|---|
 | **Camada atual** | 4 — Ingestão (`data-ingestion`), com a preparação de governança |
-| **Situação** | Governança e etapa 1b (eventos e auditoria) prontas na `develop`, aguardando o deploy geral. Bronze (3a) no ar |
+| **Situação** | Etapa 1b (eventos e auditoria) aplicada na conta; governança documentada. Bronze (3a) no ar |
 | **Próximo passo** | Confirmar o escopo da etapa 4a (primeira fonte, formato no bronze, agendamento) |
 | **Última atualização** | 2026-11-02 |
 
@@ -21,7 +21,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 1. [ ] Camada 4: confirmar o escopo da etapa 4a (primeira fonte, formato no bronze, agendamento).
 2. [ ] Camada 4: implementar a 4a na `develop` do `data-ingestion`, já com contrato de dados, colunas técnicas, quarentena e `AssetUpdated`.
-3. [ ] Deploy geral: PR `develop → main` em cada repositório, na ordem `data-foundation` → `data-lakehouse` → `data-ingestion`, e `apply`.
+3. [ ] Levar para a `main` o que está na `develop` do `data-platform`, do `data-lakehouse` e do `data-ingestion` (sem apply).
 
 ## ⚠️ Pendências e bloqueios
 
@@ -31,7 +31,6 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | QuickSight bloqueado no plano gratuito | Camada 9 (Analytics) | Ao chegar na camada 9: upgrade da conta ou BI open source |
 | Budget de US$ 10/mês | Pode ficar apertado com EC2 (camada 7) | Antes da camada 7 |
 | Ativação das tags de custo negada à conta (só a conta gerenciadora da organização pode ativar) | Custo por `Component`/`Repository` indisponível no Cost Explorer | Junto com um eventual upgrade da conta |
-| Trilha do CloudTrail multirregião com a SCP `RegionFloor` | Pode falhar no primeiro apply da etapa 1b | No deploy geral: se falhar, `audit_multi_region = false` |
 | OIDC bloqueado no plano gratuito (SCP nega `iam:*OpenIDConnectProvider*`) | Deploy automático pelo GitHub Actions (camada 12) sem credencial temporária | Quando o deploy automático for retomado: usuário IAM dedicado ao CI ou upgrade da conta |
 
 ---
@@ -41,7 +40,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | # | Camada | Repositório | Status |
 |---|---|---|---|
 | 0 | [Ambiente local e acesso à AWS](#camada-0--ambiente-local-e-acesso-à-aws) | — | ✅ |
-| 1 | [Fundação](#camada-1--fundação) | `data-foundation` | ✅ (1b 🟡) |
+| 1 | [Fundação](#camada-1--fundação) | `data-foundation` | ✅ |
 | 2 | [Repositório e CI básico](#camada-2--repositório-e-ci-básico) | todos | ✅ |
 | 3 | [Lakehouse](#camada-3--lakehouse) | `data-lakehouse` | ⏳ |
 | 4 | [Ingestão](#camada-4--ingestão) | `data-ingestion` | ⬜ |
@@ -92,12 +91,12 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Em aberto:** valor do budget. US$ 10 serve até a camada 5; antes das camadas 7 e 8, avaliar US$ 25–30.
 
-**1b — Eventos e auditoria** 🟡 (na `develop`, entra no deploy geral)
+**1b — Eventos e auditoria** ✅ (2026-11-02)
 - [x] Barramento EventBridge `lab-data-dev-assets` com archive de 90 dias ([ADR-0015](docs/decisoes/0015-assets-e-eventos.md))
 - [x] Trilha CloudTrail `lab-data-dev-audit` com bucket próprio, validação de integridade e retenção de 365 dias ([ADR-0017](docs/decisoes/0017-auditoria-cloudtrail.md))
 - [x] Contrato: `assets_event_bus_name` e `assets_event_bus_arn`
 - [x] `terraform test` (11 casos) e `plan` com 12 recursos novos, 0 alterados
-- [ ] `make apply` no deploy geral
+- [x] `make apply`: 12 recursos; a trilha multirregião passou pela SCP de região e está gravando
 - ~~Ativar as tags de custo~~: negado no plano gratuito (ver pendências)
 
 ---
@@ -355,3 +354,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Deploy automático pelo GitHub Actions avaliado e adiado: o OIDC está bloqueado no plano gratuito |
 | 2026-11-02 | Camada 3: escopo confirmado; o lakehouse passa a ser construído camada a camada, começando pelo bronze (código pronto e testado no moto). S3 Tables na silver registrado como ADR-0014 (proposto) |
 | 2026-11-02 | Governança: contrato de dados por asset, eventos `AssetUpdated`, auditoria com CloudTrail e fluxo com `develop` (ADRs 0015 a 0018); etapa 1b da fundação pronta na `develop` |
+| 2026-11-02 | ✅ Etapa 1b concluída: barramento `lab-data-dev-assets`, archive e trilha `lab-data-dev-audit` (multirregião) aplicados |
