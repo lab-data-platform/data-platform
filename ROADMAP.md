@@ -13,7 +13,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | | |
 |---|---|
 | **Camada atual** | 3 — Lakehouse (`data-lakehouse`) |
-| **Situação** | Código da camada 3 pronto e testado nos níveis 1 e 2 (moto); `plan` com 37 recursos; falta aplicar na conta |
+| **Situação** | Camada 3 começando pelo **bronze**: código pronto e testado nos níveis 1 e 2 (moto); `plan` com 19 recursos; falta aplicar na conta |
 | **Próximo passo** | Merge do PR, `make apply` e `make smoke-test` no `data-lakehouse` |
 | **Última atualização** | 2026-11-02 |
 
@@ -119,21 +119,28 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 🟡 **Código pronto; falta aplicar.** Repositório: `data-lakehouse`.
 
-**Objetivo:** criar o armazenamento e o catálogo de todas as camadas de dado.
+**Objetivo:** criar o armazenamento e o catálogo das camadas de dado, **uma de cada vez**: primeiro o bronze, depois silver e gold.
 
 **Entregáveis**
-- [x] Escopo confirmado: um bucket por camada, Lake Formation só na camada 11, limite de 1 GB por consulta no Athena
-- [x] Módulo `data-bucket` reutilizável; buckets `bronze` (versionado), `silver`, `gold` e `athena-results` (expira em 7 dias), com criptografia, sem acesso público, só TLS, lifecycle
-- [x] Databases do Glue: `lab_data_dev_bronze`, `lab_data_dev_silver`, `lab_data_dev_gold`
+**3a — Bronze** 🟡
+- [x] Escopo confirmado: um bucket por camada, camada a camada (começando pelo bronze), Lake Formation só na camada 11, limite de 1 GB por consulta no Athena
+- [x] Módulo `data-bucket` reutilizável; bucket do bronze (versionado) e `athena-results` (expira em 7 dias), com criptografia, sem acesso público, só TLS, lifecycle
+- [x] Database do Glue `lab_data_dev_bronze`
 - [x] Workgroup `lab-data-dev` (engine v3, resultados no bucket próprio, limite de 1 GB por consulta)
-- [x] Contrato no SSM: 8 parâmetros em `/lab-data/dev/lakehouse/` ([contratos](docs/contratos.md#data-lakehouse)); consome o contrato do foundation
-- [x] Nível 1: `terraform test` (7 casos)
-- [x] Nível 2: stack inteiro aplicado no moto (37 recursos, 12 verificações), também no CI
-- [x] Armazenamento plugável por camada (`layer_storage`); S3 Tables na silver em avaliação ([ADR-0014](docs/decisoes/0014-s3-tables-na-silver.md))
+- [x] Contrato no SSM: 4 parâmetros em `/lab-data/dev/lakehouse/` ([contratos](docs/contratos.md#data-lakehouse)); consome o contrato do foundation
+- [x] Nível 1: `terraform test` (9 casos, incluindo silver e gold ligadas)
+- [x] Nível 2: stack aplicado no moto (19 recursos, 8 verificações), também no CI
 - [ ] `make apply` na conta real
-- [ ] Nível 3: `make smoke-test` (tabela Iceberg criada, consultada e apagada pelo workgroup)
+- [ ] Nível 3: `make smoke-test` (arquivo JSON no bronze, tabela no Glue, consulta pelo workgroup)
 
-**Pronto quando:** dá para criar, consultar e apagar uma tabela Iceberg na silver usando só o workgroup da plataforma.
+**3b — Silver** ⬜ (antes da camada 5)
+- [ ] Decidir o armazenamento: bucket comum ou S3 Tables ([ADR-0014](docs/decisoes/0014-s3-tables-na-silver.md))
+- [ ] Ligar a silver em `layers` e aplicar
+
+**3c — Gold** ⬜ (antes da camada 5)
+- [ ] Ligar a gold em `layers` e aplicar
+
+**Pronto quando:** cada camada ligada tem bucket, database e contrato, e o smoke test passa. Para o bronze: um arquivo gravado nele vira tabela consultável pelo workgroup da plataforma.
 
 **Em aberto:** S3 Tables na silver ([ADR-0014](docs/decisoes/0014-s3-tables-na-silver.md)), a decidir antes da camada 5.
 
@@ -324,4 +331,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Repositórios publicados na organização [lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
 | 2026-11-02 | Primeiro CI (GitHub Actions) e proteção da `main` no `data-foundation`, feitos pelo usuário com acompanhamento |
 | 2026-11-02 | ✅ Camada 2 concluída: pre-commit com gitleaks, job `pre-commit` no CI e `main` protegida nos 4 repositórios |
-| 2026-11-02 | Camada 3: escopo confirmado e código do lakehouse pronto, testado no moto; S3 Tables na silver registrado como ADR-0014 (proposto) |
+| 2026-11-02 | Camada 3: escopo confirmado; o lakehouse passa a ser construído camada a camada, começando pelo bronze (código pronto e testado no moto). S3 Tables na silver registrado como ADR-0014 (proposto) |
