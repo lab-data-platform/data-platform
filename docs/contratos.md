@@ -22,15 +22,20 @@ Publicado por `data-foundation/infra/contract.tf`.
 
 ## data-lakehouse
 
-⬜ Planejado (camada 3). Previsão:
+Publicado por `data-lakehouse/infra/contract.tf` (camada 3).
 
 | Parâmetro | Conteúdo | Consumidores |
 |---|---|---|
 | `/lab-data/<env>/lakehouse/bronze_bucket` | Bucket da camada bronze | `data-ingestion` |
 | `/lab-data/<env>/lakehouse/silver_bucket` | Bucket da camada silver | dbt do lake |
 | `/lab-data/<env>/lakehouse/gold_bucket` | Bucket da camada gold | dbt do lake, DW |
-| `/lab-data/<env>/lakehouse/glue_database_<camada>` | Database do Glue de cada camada | `data-ingestion`, dbt do lake |
-| `/lab-data/<env>/lakehouse/athena_workgroup` | Workgroup do Athena | dbt do lake, analytics |
+| `/lab-data/<env>/lakehouse/glue_database_bronze` | Database do Glue do bronze | `data-ingestion` |
+| `/lab-data/<env>/lakehouse/glue_database_silver` | Database do Glue da silver | dbt do lake |
+| `/lab-data/<env>/lakehouse/glue_database_gold` | Database do Glue da gold | dbt do lake, DW |
+| `/lab-data/<env>/lakehouse/athena_workgroup` | Workgroup do Athena (`lab-data-<env>`) | `data-ingestion`, dbt do lake, analytics |
+| `/lab-data/<env>/lakehouse/athena_results_bucket` | Bucket de resultados do Athena | quem precisar ler resultados de consulta direto do S3 |
+
+**Consome:** `/lab-data/<env>/foundation/name_prefix` e `account_id`.
 
 ## data-ingestion
 
