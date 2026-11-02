@@ -12,16 +12,16 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 | | |
 |---|---|
-| **Camada atual** | 2 — Repositório e CI básico (todos os repositórios) |
-| **Situação** | Os 4 repositórios estão publicados em [github.com/lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
-| **Próximo passo** | `pre-commit` com detector de segredos; depois, escopo da camada 3 |
+| **Camada atual** | 3 — Lakehouse (`data-lakehouse`), a iniciar |
+| **Situação** | Camada 2 concluída: os 4 repositórios têm pre-commit, CI e `main` protegida |
+| **Próximo passo** | Confirmar o escopo da camada 3 (`data-lakehouse`) |
 | **Última atualização** | 2026-11-02 |
 
 ## ⏭️ Próximos passos
 
 1. [x] Camada 2: GitHub Actions com `terraform fmt -check`, `validate` e `test` no `data-foundation`.
 2. [x] Camada 2: proteção da `main` no `data-foundation` (ruleset `proteger-main`).
-3. [ ] Camada 2: `pre-commit` com detector de segredos.
+3. [x] Camada 2: `pre-commit` com detector de segredos e padrão de qualidade nos 4 repositórios.
 4. [ ] Camada 3: confirmar o escopo do `data-lakehouse` antes de começar.
 
 ## ⚠️ Pendências e bloqueios
@@ -40,7 +40,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 |---|---|---|---|
 | 0 | [Ambiente local e acesso à AWS](#camada-0--ambiente-local-e-acesso-à-aws) | — | ✅ |
 | 1 | [Fundação](#camada-1--fundação) | `data-foundation` | ✅ |
-| 2 | [Repositório e CI básico](#camada-2--repositório-e-ci-básico) | todos | ⏳ |
+| 2 | [Repositório e CI básico](#camada-2--repositório-e-ci-básico) | todos | ✅ |
 | 3 | [Lakehouse](#camada-3--lakehouse) | `data-lakehouse` | ⬜ |
 | 4 | [Ingestão](#camada-4--ingestão) | `data-ingestion` | ⬜ |
 | 5 | [Transformação no lake](#camada-5--transformação-no-lake) | `data-lakehouse` | ⬜ |
@@ -94,7 +94,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 ### Camada 2 — Repositório e CI básico
 
-⏳ **Em andamento.** Repositórios: todos.
+✅ **Concluída em 2026-11-02.** Repositórios: todos.
 
 **Objetivo:** versionar cada repositório e validar automaticamente todo push.
 
@@ -105,8 +105,9 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [x] Repositórios **públicos** na organização [lab-data-platform](https://github.com/lab-data-platform)
 - [x] Proteção da `main` no `data-foundation`: ruleset `proteger-main` (só por PR, CI obrigatório, sem force push, sem apagar), testada com um push direto recusado
 - [x] GitHub Actions no `data-foundation`: `terraform fmt -check`, `make validate` e `make test` em todo PR e push na `main` (PR #1)
-- [ ] CI e proteção nos outros repositórios, conforme cada um ganhar código (lint de Python com ruff, `dbt parse`)
-- [ ] `pre-commit` local com os mesmos checks, mais um detector de segredos (ex.: gitleaks)
+- [x] Padrão de qualidade nos 4 repositórios: job `pre-commit` no CI e ruleset `proteger-main` exigindo os checks ([convenções](docs/convencoes.md#padrão-de-qualidade))
+- [ ] Jobs por linguagem nos próximos repositórios, quando houver código (ruff para Python, `dbt parse`)
+- [x] `pre-commit` com gitleaks, credenciais AWS, chave privada e verificações gerais; testado com um token falso bloqueado
 
 **Pronto quando:** um PR com Terraform mal formatado falha no CI.
 
@@ -318,3 +319,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Padrão "Recursos na AWS" nos READMEs: serviço, recurso, finalidade, região, custo, código e link do console |
 | 2026-11-02 | Repositórios publicados na organização [lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
 | 2026-11-02 | Primeiro CI (GitHub Actions) e proteção da `main` no `data-foundation`, feitos pelo usuário com acompanhamento |
+| 2026-11-02 | ✅ Camada 2 concluída: pre-commit com gitleaks, job `pre-commit` no CI e `main` protegida nos 4 repositórios |
