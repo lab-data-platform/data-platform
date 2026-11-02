@@ -12,7 +12,23 @@ Regras que todo repositório, recurso, tabela e fonte de dados da plataforma seg
 | Makefile | Alvos padrão: `help`, `whoami`, `fmt`, `validate`, `test`, `init`, `plan`, `apply`, `destroy`; e `local-up`, `local-test`, `local-down` quando houver ambiente local |
 | Dependência entre repositórios | Só pelos contratos no SSM ([contratos.md](contratos.md)), nunca pelo state ou pelo código de outro repositório |
 | Branch principal | `main` |
-| README | Sempre com a seção **"Recursos na AWS"** (ver abaixo) |
+| README | Sempre com a seção **"Recursos na AWS"** (ver abaixo) e a seção **"Qualidade"** |
+| Qualidade | `.pre-commit-config.yaml` + CI com o job `pre-commit` + ruleset `proteger-main` (ver abaixo) |
+
+### Padrão de qualidade
+
+Todo repositório tem as três peças abaixo desde o primeiro commit de código:
+
+| Peça | Padrão |
+|---|---|
+| **pre-commit** | `.pre-commit-config.yaml` com `pre-commit-hooks` (espaços, fim de arquivo, YAML, conflito, arquivo grande, chave privada, credenciais AWS, `no-commit-to-branch` na `main`) e **gitleaks**. Repositórios com Terraform acrescentam o `terraform_fmt` |
+| **CI** | `.github/workflows/ci.yml` com o job `pre-commit` (`pre-commit run --all-files`, com `SKIP: no-commit-to-branch`) e um job por linguagem do repositório (ex.: `Terraform (fmt, validate, test)`) |
+| **Proteção da `main`** | Ruleset `proteger-main`: só por PR (0 aprovações), sem force push, sem apagar e com **todos os jobs do CI obrigatórios** |
+
+Regras:
+- Versões dos hooks e das actions fixadas (`rev:` e `@vN`). Para atualizar: `pre-commit autoupdate`, num PR próprio.
+- Merge sempre com **squash**, com o título no padrão de commits (`gh pr merge --squash --subject "..."`).
+- Depois de clonar: `pre-commit install`.
 
 ### Seção "Recursos na AWS" no README
 
