@@ -14,14 +14,15 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 |---|---|
 | **Camada atual** | 2 — Repositório e CI básico (todos os repositórios) |
 | **Situação** | Os 4 repositórios estão publicados em [github.com/lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
-| **Próximo passo** | CI básico (GitHub Actions) e proteção da branch `main` |
+| **Próximo passo** | `pre-commit` com detector de segredos; depois, escopo da camada 3 |
 | **Última atualização** | 2026-11-02 |
 
 ## ⏭️ Próximos passos
 
-1. [ ] Camada 2: GitHub Actions com `terraform fmt -check`, `validate` e `test`.
-2. [ ] Camada 2: proteção da branch `main` e `pre-commit` com detector de segredos.
-3. [ ] Camada 3: confirmar o escopo do `data-lakehouse` antes de começar.
+1. [x] Camada 2: GitHub Actions com `terraform fmt -check`, `validate` e `test` no `data-foundation`.
+2. [x] Camada 2: proteção da `main` no `data-foundation` (ruleset `proteger-main`).
+3. [ ] Camada 2: `pre-commit` com detector de segredos.
+4. [ ] Camada 3: confirmar o escopo do `data-lakehouse` antes de começar.
 
 ## ⚠️ Pendências e bloqueios
 
@@ -102,8 +103,9 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [x] Primeiro commit de cada repositório, no padrão Conventional Commits em português
 - [x] Identidade Git pessoal separada da do trabalho (`includeIf` no `~/.gitconfig` + chave SSH própria)
 - [x] Repositórios **públicos** na organização [lab-data-platform](https://github.com/lab-data-platform)
-- [ ] Proteção da branch `main`
-- [ ] GitHub Actions: `terraform fmt -check`, `validate` e `test` e, conforme o código existir, lint de Python (ruff) e `dbt parse`
+- [x] Proteção da `main` no `data-foundation`: ruleset `proteger-main` (só por PR, CI obrigatório, sem force push, sem apagar), testada com um push direto recusado
+- [x] GitHub Actions no `data-foundation`: `terraform fmt -check`, `make validate` e `make test` em todo PR e push na `main` (PR #1)
+- [ ] CI e proteção nos outros repositórios, conforme cada um ganhar código (lint de Python com ruff, `dbt parse`)
 - [ ] `pre-commit` local com os mesmos checks, mais um detector de segredos (ex.: gitleaks)
 
 **Pronto quando:** um PR com Terraform mal formatado falha no CI.
@@ -315,3 +317,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Roadmap unificado: plano e acompanhamento num só arquivo, o `ROADMAP.md` |
 | 2026-11-02 | Padrão "Recursos na AWS" nos READMEs: serviço, recurso, finalidade, região, custo, código e link do console |
 | 2026-11-02 | Repositórios publicados na organização [lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
+| 2026-11-02 | Primeiro CI (GitHub Actions) e proteção da `main` no `data-foundation`, feitos pelo usuário com acompanhamento |
