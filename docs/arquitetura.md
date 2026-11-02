@@ -36,7 +36,7 @@ Ela entrega três capacidades de consumo:
  │                                                              (via Spectrum)      │
  │                          Glue Data Catalog · Athena                              │
  │                                                                                  │
- │  ORQUESTRAÇÃO ─ Airflow (EC2) comanda o fluxo de ponta a ponta                   │
+ │  ORQUESTRAÇÃO ─ serverless: EventBridge (agenda e eventos de assets) + Step Fn.  │
  │                                                                                  │
  │  TRANSVERSAIS ─ qualidade · observabilidade · governança/catálogo · segurança    │
  │                 IaC (Terraform) · CI/CD · FinOps                                 │
@@ -45,9 +45,9 @@ Ela entrega três capacidades de consumo:
 
 ### Fluxo de um dado
 
-1. O **Airflow** agenda a execução da fonte e dispara a state machine de ingestão no **Step Functions**.
-2. A **Lambda** extrai da fonte e grava o dado bruto no **bronze**, com os metadados de ingestão.
-3. O **dbt-athena** transforma bronze → **silver** (limpo, tipado, deduplicado) → **gold** (entidades de negócio conformadas), em Iceberg.
+1. O **EventBridge Scheduler** dispara, na agenda da fonte, a state machine de ingestão no **Step Functions**.
+2. A **Lambda** extrai da fonte e grava o dado bruto no **bronze**, com o manifesto; a execução emite **OpenLineage** e, com o asset pronto, publica **`AssetUpdated`**.
+3. O evento dispara o **dbt-athena**, que transforma bronze → **silver** (limpo, tipado, deduplicado) → **gold** (entidades de negócio conformadas), em Iceberg.
 4. O **dbt-redshift** lê a gold pelo **Redshift Spectrum** e materializa o **modelo dimensional** no Redshift.
 5. O **QuickSight** consome os marts do DW. O lake continua consultável pelo Athena.
 6. Testes, frescor e alertas rodam em cada passo, e o catálogo registra a linhagem de ponta a ponta.
@@ -71,7 +71,7 @@ Cada camada tem um papel, as ferramentas que a implementam e um **contrato** com
 
 | | |
 |---|---|
-| Papel | Rede e identidade compartilhadas pelos componentes que rodam dentro de VPC (EC2 do Airflow, Redshift) |
+| Papel | Rede e identidade compartilhadas pelos componentes que rodam dentro de VPC (Redshift; EC2 do Airflow, se adotado) |
 | Ferramentas | VPC default, security groups, IAM roles por componente, SSM Session Manager |
 | Repositório | `data-foundation` (construída só antes do primeiro componente em VPC) |
 | Princípios | Sem NAT Gateway (custo), sem porta exposta na internet, uma role por componente com o mínimo de permissão |
@@ -123,9 +123,10 @@ Cada camada tem um papel, as ferramentas que a implementam e um **contrato** com
 | | |
 |---|---|
 | Papel | Decidir quando e em que ordem tudo roda, com retry, histórico e alerta de falha |
-| Ferramentas | **Airflow em EC2** como orquestrador principal (DAG de ponta a ponta, com o dbt via Astronomer Cosmos) e **Step Functions** no fluxo serverless de cada ingestão, disparado pelo Airflow |
-| Acesso | UI do Airflow por port forwarding via SSM (`localhost:8080`), sem porta pública |
-| Custo | t3.medium com agenda de liga/desliga |
+| Ferramentas | **Serverless** ([ADR-0019](decisoes/0019-orquestracao-serverless.md)): **EventBridge Scheduler** (agenda), eventos **`AssetUpdated`** (dependências entre assets) e **Step Functions** (o fluxo de cada pipeline), com o código em **Lambda** |
+| Visão do grafo | Linhagem **OpenLineage**: Marquez local e catálogo de metadados na camada 11 ([assets](assets.md#5-linhagem-openlineage)) |
+| Alternativa | **Airflow** (EC2 ou MWAA), como mais um consumidor dos eventos `AssetUpdated`, se houver necessidade |
+| Custo | ~US$ 0 (dentro da camada gratuita do Step Functions, da Lambda e do EventBridge) |
 
 ### 3.8 Analytics
 
@@ -139,7 +140,7 @@ Cada camada tem um papel, as ferramentas que a implementam e um **contrato** com
 | | |
 |---|---|
 | Papel | Garantir que o dado está correto e atualizado, e que falhas são percebidas |
-| Ferramentas | dbt tests e `source freshness`, alertas do Airflow, CloudWatch (logs, métricas, alarmes), SNS para notificação |
+| Ferramentas | dbt tests e `source freshness`, alarmes de falha do Step Functions e da Lambda, frescor a partir do `slaProperties` dos contratos, CloudWatch (logs, métricas, alarmes), SNS para notificação |
 
 ### 3.10 Governança e catálogo
 
@@ -219,7 +220,7 @@ Cada capacidade pode ter **mais de uma implementação**, para trocar de ferrame
 
 | Capacidade | Implementação padrão | Alternativas previstas |
 |---|---|---|
-| Orquestração | Airflow (EC2) | Step Functions de ponta a ponta, MWAA |
+| Orquestração | Serverless (EventBridge + Step Functions + Lambda) | Airflow (EC2 ou MWAA) |
 | Data Warehouse | Redshift Serverless | Gold no Athena (custo quase zero) |
 | Analytics | QuickSight | Metabase ou Superset (Docker) |
 | Governança | dbt docs → OpenMetadata | SageMaker Unified Studio, DataHub |
@@ -260,7 +261,7 @@ Step Functions (ingestão) ──AssetUpdated──► EventBridge lab-data-<env
                                                     │ archive (90 dias, replay)           (dbt, Airflow via SQS)
 ```
 
-- **Contrato de dados por asset** no `assets.yml` de cada repositório ([ADR-0016](decisoes/0016-contrato-de-dados-por-asset.md)).
+- **Padrão de assets** ([ADR-0020](decisoes/0020-padrao-de-assets.md)): ID `<camada>.<domínio>.<fonte>.<entidade>`, nomes físicos derivados, contrato **ODCS** no `assets/` de cada repositório produtor, lib `labdata.assets` e linhagem **OpenLineage** ([assets.md](assets.md)).
 - **Políticas** de classificação, colunas técnicas, quarentena, retenção, segredos e evolução de schema: [governanca.md](governanca.md).
 - **Auditoria** da conta com CloudTrail ([ADR-0017](decisoes/0017-auditoria-cloudtrail.md)).
 - Detalhes do evento e de como reagir a ele: [eventos.md](eventos.md).
@@ -286,7 +287,7 @@ Valores aproximados por mês, no ambiente `dev`, com uso de laboratório.
 |---|---|---|
 | S3, Glue Catalog, Lambda, Step Functions | centavos | Lifecycle no S3 |
 | Athena | centavos (US$ 5 por TB escaneado) | Limite de bytes por consulta no workgroup, Iceberg particionado |
-| EC2 do Airflow (t3.medium) | US$ 10 a 30 | Agenda de liga/desliga |
+| EC2 do Airflow (t3.medium), se adotado | US$ 10 a 30 | Agenda de liga/desliga |
 | Redshift Serverless | depende do uso (8 RPU a cerca de US$ 3/hora ativa) | Base de 8 RPU, limite de RPU-hora por dia, trial de crédito |
 | QuickSight | trial de 30 dias, depois cerca de US$ 24 por autor | Avaliar ao fim do trial |
 | OpenMetadata | US$ 30 a 60 (EC2 com 8 GB) | Ligar só na camada de governança |

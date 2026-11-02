@@ -14,7 +14,8 @@ Plataforma de dados `lab-data` na AWS, construída **camada a camada** e dividid
 | Como as peças e os repositórios se encaixam? | [docs/arquitetura.md](docs/arquitetura.md) |
 | O que cada repositório publica para os outros? | [docs/contratos.md](docs/contratos.md) |
 | Como o dado é tratado (contrato, classificação, quarentena, retenção)? | [docs/governanca.md](docs/governanca.md) |
-| Como nomear assets e publicar `AssetUpdated`? | [docs/eventos.md](docs/eventos.md) |
+| Como nomear e declarar um asset (ID, ODCS, lib, OpenLineage)? | [docs/assets.md](docs/assets.md) |
+| Como publicar e reagir a `AssetUpdated`? | [docs/eventos.md](docs/eventos.md) |
 | Por que escolhemos cada ferramenta? | [docs/decisoes/](docs/decisoes/README.md) |
 | Nomes, tags, estrutura de repositório, Terraform | [docs/convencoes.md](docs/convencoes.md) |
 | Setup local e acesso à AWS | [docs/setup/ambiente-local.md](docs/setup/ambiente-local.md) |
@@ -27,7 +28,7 @@ Plataforma de dados `lab-data` na AWS, construída **camada a camada** e dividid
 4. **Decisão nova ou alterada vira ADR** em `docs/decisoes/` (template incluído). ADR antigo não se apaga: fica como *Substituído*. Atualize o índice e o `arquitetura.md`.
 5. **Ao fim de cada sessão,** atualize o [ROADMAP.md](ROADMAP.md): "Onde estamos", próximos passos, checklists e histórico. **Ao concluir uma camada,** atualize também o status no README do repositório da camada. Não crie outro arquivo de roadmap.
 6. **Repositório novo segue a estrutura padrão** (`convencoes.md`): `infra/` com `tests/`, `Makefile` com os alvos padrão, `README.md`, `CLAUDE.md` e `.gitignore`. O README tem sempre as seções **"Recursos na AWS"** e **"Qualidade"**, no formato padrão; ao criar ou remover um recurso, atualize a tabela no mesmo commit. Todo repositório segue o **padrão de qualidade** (pre-commit + CI + ruleset `proteger-main`) de `convencoes.md`.
-7. **Contrato:** tudo o que um repositório precisa de outro passa pelo SSM (`/lab-data/<env>/<componente>/<chave>`). Ao mudar um contrato, atualize `docs/contratos.md`. Todo asset novo precisa do **contrato de dados** no `assets.yml` ([governança](docs/governanca.md)) e publica `AssetUpdated` quando fica pronto.
+7. **Contrato:** tudo o que um repositório precisa de outro passa pelo SSM (`/lab-data/<env>/<componente>/<chave>`). Ao mudar um contrato, atualize `docs/contratos.md`. Todo asset novo segue o [padrão de assets](docs/assets.md): ID de 4 partes, contrato **ODCS** em `assets/` do repositório produtor, nomes físicos derivados do ID (nunca escritos à mão), OpenLineage em toda execução e `AssetUpdated` quando fica pronto.
 8. **Teste local:** todo repositório tem `make test` (nível 1). O nível 2 (moto) só onde o emulador é confiável ([ADR-0012](docs/decisoes/0012-testes-locais.md)).
 9. **Git:** desenvolva na branch **`develop`** de cada repositório, com push direto ([ADR-0018](docs/decisoes/0018-fluxo-de-branches-com-develop.md)). A `main` é protegida e só recebe o PR `develop → main` no **deploy geral**, que o usuário pede; nada de PR para a `main` nem `apply` fora dele. Commits seguem o Conventional Commits em português (`feat`, `fix`, `docs`, `test`, `chore`...; ver `convencoes.md`), um assunto por commit. A identidade pessoal vem do `includeIf` no `~/.gitconfig`; confira com `git config user.email` antes de commitar.
 10. **Idioma:** documentação, comentários e mensagens em português do Brasil, com acentuação correta.

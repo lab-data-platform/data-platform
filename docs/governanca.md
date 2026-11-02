@@ -8,43 +8,22 @@ Políticas que valem para **todo dado** da plataforma. As [convenções](convenc
 
 ## 1. Contrato de dados por asset
 
-Cada repositório declara os assets que produz num arquivo `assets.yml`, versionado junto com o código ([ADR-0016](decisoes/0016-contrato-de-dados-por-asset.md)). O arquivo é o **contrato de dados**: o que o asset é, quem responde por ele e o que os consumidores podem esperar.
+Cada asset tem um **contrato de dados no padrão ODCS v3.2.0**, num arquivo `assets/<camada>/<domínio>/<fonte>/<entidade>.yml` do repositório que o produz ([ADR-0020](decisoes/0020-padrao-de-assets.md)). O contrato diz o que o asset é, quem responde por ele e o que os consumidores podem esperar.
 
-```yaml
-assets:
-  - id: bronze.bcb.sgs                    # <camada>.<fonte>.<entidade>
-    tipo: bronze                          # fonte-externa | bronze | silver | gold | dw | dashboard
-    descricao: Séries do SGS como vieram da API, por série e data de ingestão
-    dono: data-ingestion                  # repositório responsável
-    classificacao: publico                # ver seção 2
-    depende_de: [source.bcb.sgs]
-    produzido_por: lab-data-dev-ingest-bcb
-    local: s3://lab-data-dev-bronze-<account_id>/bcb/sgs/
-    tabela: lab_data_dev_bronze.bcb_sgs
-    frescor_esperado: 1d                  # sem evento AssetUpdated nesse prazo = alerta
-    versao_contrato: 1.0.0                # ver seção 8
-    schema:
-      - { nome: data,  tipo: string, descricao: "Data da observação (dd/mm/aaaa)", obrigatorio: true }
-      - { nome: valor, tipo: string, descricao: "Valor da série, como texto",        obrigatorio: true }
-    qualidade:
-      - { regra: nao_vazio,   descricao: "O arquivo tem pelo menos uma observação" }
-      - { regra: obrigatorio, coluna: data }
-```
+| O contrato declara | Campo ODCS |
+|---|---|
+| ID, nome, descrição, dono, domínio | `id`, `name`, `description`, `team`, `domain` |
+| Onde o dado está | `servers` |
+| Schema e regras de qualidade | `schema[].properties`, `schema[].quality` |
+| Frescor esperado | `slaProperties` (`freshness`) |
+| Versão do contrato | `version` (ver seção 8) |
+| Classificação, criticidade, dependências, disparo e quem produz | `customProperties` obrigatórias da plataforma |
 
-| Campo | Obrigatório | Para quê |
-|---|---|---|
-| `id`, `tipo`, `descricao`, `dono` | sim | Identificar o asset e quem responde por ele |
-| `classificacao` | sim | Controle de acesso e retenção (seções 2 e 6) |
-| `depende_de` | sim (pode ser vazio) | Linhagem: o grafo da plataforma sai daqui |
-| `frescor_esperado` | sim, exceto fonte externa | Alerta de atraso (camada 10) |
-| `schema`, `qualidade` | sim, exceto fonte externa | O que o consumidor pode esperar e o que a validação confere |
-| `versao_contrato` | sim | Evolução do schema (seção 8) |
-
-O formato é validado por um JSON Schema: [schemas/assets.schema.json](schemas/assets.schema.json).
+O formato completo, um exemplo validado e as regras de validação estão em [assets.md](assets.md#3-contrato-odcs). **Sem contrato, não há ingestão.**
 
 ## 2. Classificação
 
-Todo asset tem uma classificação, que vai no `assets.yml` e na tag `Classification` dos recursos dele.
+Todo asset tem uma classificação, que vai na `customProperties` `classificacao` do contrato e na tag `Classification` dos recursos dele.
 
 | Classificação | O que é | Exemplo | Regras |
 |---|---|---|---|
@@ -65,10 +44,11 @@ Toda tabela, do bronze em diante, carrega as mesmas colunas de controle. No bron
 | `_source` | Fonte e entidade (ex.: `bcb.sgs`) | Saber de onde veio |
 | `_run_id` | ID da execução que produziu o dado (ARN da execução no Step Functions) | Rastrear até o log da execução |
 | `_source_file` | Caminho do arquivo de origem no bronze | Linhagem por linha e reprocessamento |
+| `_partition` | Partição de onde a linha veio (ex.: `serie=432/ingestion_date=2026-11-02`) | Reprocessar e substituir só a partição certa |
 
 ## 4. Validação e quarentena
 
-- Toda ingestão valida o dado **antes** de publicá-lo, conforme as regras de `qualidade` do contrato.
+- Toda ingestão valida o dado **antes** de publicá-lo, conforme as regras de `quality` do contrato ODCS.
 - O que falha vai para `s3://<bronze>/_quarantine/<fonte>/<entidade>/ingestion_date=<data>/`, com um arquivo explicando o motivo, e gera alerta no tópico `lab-data-<env>-alerts`.
 - Dado em quarentena **não** dispara `AssetUpdated` e **não** é lido pelas camadas seguintes.
 - Nada se apaga da quarentena automaticamente antes da análise; a retenção dela é a do bronze.
@@ -100,19 +80,20 @@ Toda tabela, do bronze em diante, carrega as mesmas colunas de controle. No bron
 
 ## 8. Evolução de schema
 
-`versao_contrato` segue o versionamento semântico:
+O campo `version` do contrato ODCS (publicado como `versao_contrato` no evento) segue o versionamento semântico:
 
 | Mudança | Tipo | Versão | O que fazer |
 |---|---|---|---|
 | Coluna nova, opcional | compatível | `1.0.0 → 1.1.0` | Atualizar o contrato |
 | Descrição ou regra de qualidade mais branda | compatível | `1.0.0 → 1.0.1` | Atualizar o contrato |
-| Coluna removida, renomeada ou com tipo alterado | **quebra** | `1.0.0 → 2.0.0` | Avisar os consumidores (`depende_de`), commit com `!` (`feat!:`), período de convivência das duas versões |
+| Coluna removida, renomeada ou com tipo alterado | **quebra** | `1.0.0 → 2.0.0` | Avisar os consumidores (quem tem o asset no `depende_de`), commit com `!` (`feat!:`), período de convivência das duas versões |
 | Mudança na fonte que quebra a validação | detectada | — | Quarentena + alerta; o contrato é revisado antes de liberar |
 
 ## 9. Auditoria
 
 - **CloudTrail:** trilha `lab-data-<env>-audit`, com validação de integridade, grava toda ação na conta por 365 dias ([ADR-0017](decisoes/0017-auditoria-cloudtrail.md)).
 - **Eventos de assets:** o archive do barramento guarda cada atualização de asset, com a execução que a produziu.
+- **Linhagem:** os eventos OpenLineage de cada execução registram entradas, saídas e o job ([assets](assets.md#5-linhagem-openlineage)).
 - **Código:** toda mudança passa por commit no padrão, CI e, na `main`, PR ([convenções](convencoes.md#branches)).
 
 ## 10. Custo

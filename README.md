@@ -11,7 +11,7 @@ Plataforma de dados construída do zero, **camada a camada**, com práticas de m
 | **Data Lakehouse** | S3 + Apache Iceberg + Glue Data Catalog + Athena |
 | **Data Warehouse** | Redshift Serverless, alimentado pelo lake via Spectrum |
 | **Analytics** | Amazon QuickSight |
-| **Orquestração** | Airflow em EC2 + Step Functions na ingestão |
+| **Orquestração** | Serverless: EventBridge (agenda e eventos de assets) + Step Functions + Lambda; Airflow como alternativa |
 | **Transformação** | dbt (Athena e Redshift) |
 
 Primeiro caso de uso: **domínio financeiro** (dados públicos do Banco Central e da CVM).
@@ -24,7 +24,7 @@ Primeiro caso de uso: **domínio financeiro** (dados públicos do Banco Central 
                                   └── dbt-athena ───┘  └─ dbt-redshift via Spectrum ─┘
                              Glue Data Catalog · Athena
 
- ORQUESTRAÇÃO   Airflow (EC2) de ponta a ponta; Step Functions em cada ingestão
+ ORQUESTRAÇÃO   serverless: EventBridge (agenda e AssetUpdated) + Step Functions; Airflow como alternativa
  TRANSVERSAIS   qualidade · observabilidade · governança · segurança · Terraform · CI/CD · FinOps
 ```
 
@@ -56,7 +56,8 @@ Os repositórios das camadas 7 em diante (orquestração, warehouse, analytics, 
 | [docs/convencoes.md](docs/convencoes.md) | Repositórios, nomes, tags, camadas de dados, Terraform |
 | [docs/contratos.md](docs/contratos.md) | Parâmetros SSM que cada repositório publica |
 | [docs/governanca.md](docs/governanca.md) | Políticas do dado: contrato por asset, classificação, colunas técnicas, quarentena, retenção, segredos, evolução de schema, auditoria |
-| [docs/eventos.md](docs/eventos.md) | Assets, nome dos assets e o evento `AssetUpdated` |
+| [docs/assets.md](docs/assets.md) | **Padrão de assets**: identidade, nomes físicos, contrato ODCS, lib `labdata.assets` e linhagem OpenLineage |
+| [docs/eventos.md](docs/eventos.md) | O evento `AssetUpdated` e como reagir a ele |
 | [docs/decisoes/](docs/decisoes/README.md) | ADRs: cada decisão e o motivo dela |
 | [docs/setup/ambiente-local.md](docs/setup/ambiente-local.md) | Ferramentas locais e acesso à AWS pela linha de comando |
 

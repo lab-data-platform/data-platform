@@ -66,7 +66,7 @@ desenvolvimento ──► develop (push direto) ──► main (PR no deploy ger
 
 ## Dados: governança e assets
 
-As políticas sobre o dado (contrato por asset, classificação, colunas técnicas, quarentena, retenção, segredos, evolução de schema) estão em [governanca.md](governanca.md). O nome dos assets e o evento `AssetUpdated` estão em [eventos.md](eventos.md).
+As políticas sobre o dado (contrato por asset, classificação, colunas técnicas, quarentena, retenção, segredos, evolução de schema) estão em [governanca.md](governanca.md). O padrão dos assets (ID, ODCS, lib, linhagem) está em [assets.md](assets.md), e o evento `AssetUpdated`, em [eventos.md](eventos.md).
 
 ## Commits
 
