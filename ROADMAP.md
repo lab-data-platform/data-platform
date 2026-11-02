@@ -31,6 +31,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | Redshift Serverless bloqueado no plano gratuito ([ADR-0013](docs/decisoes/0013-regiao-us-east-2.md)) | Camada 8 (DW) | Ao chegar na camada 8: upgrade da conta ou gold no Athena |
 | QuickSight bloqueado no plano gratuito | Camada 9 (Analytics) | Ao chegar na camada 9: upgrade da conta ou BI open source |
 | Budget de US$ 10/mês | Pode ficar apertado com EC2 (camada 7) | Antes da camada 7 |
+| OIDC bloqueado no plano gratuito (SCP nega `iam:*OpenIDConnectProvider*`) | Deploy automático pelo GitHub Actions (camada 12) sem credencial temporária | Quando o deploy automático for retomado: usuário IAM dedicado ao CI ou upgrade da conta |
 
 ---
 
@@ -293,8 +294,8 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 **Objetivo:** entregar mudanças sem passo manual.
 
 **Entregáveis**
-- [ ] Credenciais da AWS no GitHub Actions via OIDC, sem access key
-- [ ] `terraform plan` comentado no PR e `apply` após o merge
+- [ ] Credenciais da AWS no GitHub Actions. ⚠️ O OIDC está bloqueado no plano gratuito (testado em 2026-11-02); alternativas: usuário IAM dedicado ao CI, com permissão mínima e secret num Environment protegido, ou upgrade da conta
+- [ ] `terraform plan` comentado no PR e `apply` após o merge, com aprovação manual (Environment `dev`) e smoke test depois do apply
 - [ ] `dbt build` em ambiente de CI (slim CI com `state:modified`)
 - [ ] Deploy automático das DAGs e das Lambdas
 
@@ -331,4 +332,5 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Repositórios publicados na organização [lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
 | 2026-11-02 | Primeiro CI (GitHub Actions) e proteção da `main` no `data-foundation`, feitos pelo usuário com acompanhamento |
 | 2026-11-02 | ✅ Camada 2 concluída: pre-commit com gitleaks, job `pre-commit` no CI e `main` protegida nos 4 repositórios |
+| 2026-11-02 | Deploy automático pelo GitHub Actions avaliado e adiado: o OIDC está bloqueado no plano gratuito |
 | 2026-11-02 | Camada 3: escopo confirmado; o lakehouse passa a ser construído camada a camada, começando pelo bronze (código pronto e testado no moto). S3 Tables na silver registrado como ADR-0014 (proposto) |
