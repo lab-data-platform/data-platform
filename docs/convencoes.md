@@ -29,6 +29,7 @@ Regras:
 - Versões dos hooks e das actions fixadas (`rev:` e `@vN`). Para atualizar: `pre-commit autoupdate`, num PR próprio.
 - Merge sempre com **squash**, com o título no padrão de commits (`gh pr merge --squash --subject "..."`).
 - Depois de clonar: `pre-commit install`.
+- Ao alterar o `.pre-commit-config.yaml`, **commite-o primeiro**: com o arquivo alterado e fora do `git add`, o pre-commit se recusa a rodar e todo commit falha.
 
 ### Seção "Recursos na AWS" no README
 

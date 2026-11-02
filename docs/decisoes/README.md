@@ -24,3 +24,4 @@ Cada decisão relevante vira um **ADR** (*Architecture Decision Record*): um reg
 | [0011](0011-contratos-ssm.md) | Contratos entre repositórios via SSM Parameter Store | Aceito |
 | [0012](0012-testes-locais.md) | Testes locais em três níveis, com moto como emulador | Aceito |
 | [0013](0013-regiao-us-east-2.md) | Região us-east-2, imposta pelo plano gratuito da conta | Aceito |
+| [0014](0014-s3-tables-na-silver.md) | S3 Tables como armazenamento da silver | Proposto |
