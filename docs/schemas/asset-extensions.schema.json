@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lab-data-platform/data-platform/docs/schemas/asset-extensions.schema.json",
+  "title": "Extensões da plataforma lab-data para contratos ODCS",
+  "description": "Regras da plataforma sobre um contrato ODCS v3.2.0 (docs/assets.md). O formato ODCS em si é validado pelo datacontract-cli.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "id", "version", "status", "domain", "team", "description", "customProperties"],
+  "properties": {
+    "apiVersion": { "const": "v3.2.0" },
+    "kind": { "const": "DataContract" },
+    "id": {
+      "type": "string",
+      "description": "<camada>.<domínio>.<fonte>.<entidade>",
+      "pattern": "^(source|bronze|silver|gold|dw|dashboard)\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+    },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "status": { "enum": ["proposed", "draft", "active", "deprecated", "retired"] },
+    "domain": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "team": { "type": "object", "required": ["name"], "properties": { "name": { "pattern": "^data-[a-z-]+$" } } },
+    "description": { "type": "object", "required": ["purpose"] },
+    "customProperties": {
+      "type": "array",
+      "allOf": [
+        { "contains": { "properties": { "property": { "const": "classificacao" }, "value": { "enum": ["publico", "interno", "confidencial", "pessoal"] } }, "required": ["property", "value"] } },
+        { "contains": { "properties": { "property": { "const": "criticidade" }, "value": { "enum": ["alta", "media", "baixa"] } }, "required": ["property", "value"] } },
+        { "contains": { "properties": { "property": { "const": "depende_de" }, "value": { "type": "array", "items": { "type": "string", "pattern": "^(source|bronze|silver|gold|dw|dashboard)\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$" } } }, "required": ["property", "value"] } },
+        { "contains": { "properties": { "property": { "const": "disparo" }, "value": { "enum": ["todos", "qualquer"] } }, "required": ["property", "value"] } },
+        { "contains": { "properties": { "property": { "const": "produzido_por" }, "value": { "type": "object", "required": ["ferramenta", "repositorio"], "properties": { "ferramenta": { "enum": ["lambda", "dbt", "airflow", "externo"] }, "repositorio": { "type": "string" }, "referencia": { "type": "string" } } } }, "required": ["property", "value"] } }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "id": { "pattern": "^source\\." } } },
+      "then": { "properties": { "customProperties": { "contains": { "properties": { "property": { "const": "produzido_por" }, "value": { "properties": { "ferramenta": { "const": "externo" } } } } } } } },
+      "else": { "required": ["schema", "servers", "slaProperties"] }
+    }
+  ]
+}

@@ -4,13 +4,23 @@
   "title": "AssetUpdated",
   "description": "Campo detail do evento AssetUpdated publicado no barramento lab-data-<env>-assets (docs/eventos.md).",
   "type": "object",
-  "required": ["asset", "versao_contrato", "particao", "local", "run_id", "produzido_em"],
+  "required": ["asset", "versao_contrato", "particao", "carga", "local", "run_id", "produzido_em"],
   "additionalProperties": false,
   "properties": {
-    "asset": { "type": "string", "pattern": "^(source|bronze|silver|gold|dw|dashboard)\\.[a-z0-9_]+(\\.[a-z0-9_]+)?$" },
+    "asset": { "type": "string", "pattern": "^(source|bronze|silver|gold|dw|dashboard)\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$" },
     "versao_contrato": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
     "particao": { "type": "string", "minLength": 1 },
-    "registros": { "type": "integer", "minimum": 0 },
+    "carga": { "enum": ["substituir", "upsert", "acrescentar"], "description": "Como o consumidor deve aplicar a atualização" },
+    "estatisticas": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registros": { "type": "integer", "minimum": 0 },
+        "arquivos": { "type": "integer", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "hash": { "type": "string", "description": "sha256 do conteúdo, para detectar dado repetido" }
+      }
+    },
     "local": { "type": "string", "pattern": "^s3://" },
     "run_id": { "type": "string", "minLength": 1 },
     "produzido_em": { "type": "string", "format": "date-time" }
