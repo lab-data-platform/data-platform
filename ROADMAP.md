@@ -13,8 +13,8 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | | |
 |---|---|
 | **Camada atual** | 3 — Lakehouse (`data-lakehouse`) |
-| **Situação** | Camada 3 começando pelo **bronze**: código pronto e testado nos níveis 1 e 2 (moto); `plan` com 19 recursos; falta aplicar na conta |
-| **Próximo passo** | Merge do PR, `make apply` e `make smoke-test` no `data-lakehouse` |
+| **Situação** | ✅ Etapa 3a (bronze) aplicada na conta e aprovada no smoke test. Silver (3b) e gold (3c) ainda não ligadas |
+| **Próximo passo** | Escolher a próxima etapa: ingestão (camada 4), que já pode gravar no bronze, ou silver (3b), que depende do ADR-0014 |
 | **Última atualização** | 2026-11-02 |
 
 ## ⏭️ Próximos passos
@@ -42,7 +42,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 0 | [Ambiente local e acesso à AWS](#camada-0--ambiente-local-e-acesso-à-aws) | — | ✅ |
 | 1 | [Fundação](#camada-1--fundação) | `data-foundation` | ✅ |
 | 2 | [Repositório e CI básico](#camada-2--repositório-e-ci-básico) | todos | ✅ |
-| 3 | [Lakehouse](#camada-3--lakehouse) | `data-lakehouse` | 🟡 |
+| 3 | [Lakehouse](#camada-3--lakehouse) | `data-lakehouse` | ⏳ |
 | 4 | [Ingestão](#camada-4--ingestão) | `data-ingestion` | ⬜ |
 | 5 | [Transformação no lake](#camada-5--transformação-no-lake) | `data-lakehouse` | ⬜ |
 | 6 | [Rede e segurança base](#camada-6--rede-e-segurança-base) | `data-foundation` | ⬜ |
@@ -118,12 +118,12 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 ### Camada 3 — Lakehouse
 
-🟡 **Código pronto; falta aplicar.** Repositório: `data-lakehouse`.
+⏳ **Bronze no ar; silver e gold a ligar.** Repositório: `data-lakehouse`.
 
 **Objetivo:** criar o armazenamento e o catálogo das camadas de dado, **uma de cada vez**: primeiro o bronze, depois silver e gold.
 
 **Entregáveis**
-**3a — Bronze** 🟡
+**3a — Bronze** ✅ (2026-11-02)
 - [x] Escopo confirmado: um bucket por camada, camada a camada (começando pelo bronze), Lake Formation só na camada 11, limite de 1 GB por consulta no Athena
 - [x] Módulo `data-bucket` reutilizável; bucket do bronze (versionado) e `athena-results` (expira em 7 dias), com criptografia, sem acesso público, só TLS, lifecycle
 - [x] Database do Glue `lab_data_dev_bronze`
@@ -131,8 +131,8 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [x] Contrato no SSM: 4 parâmetros em `/lab-data/dev/lakehouse/` ([contratos](docs/contratos.md#data-lakehouse)); consome o contrato do foundation
 - [x] Nível 1: `terraform test` (9 casos, incluindo silver e gold ligadas)
 - [x] Nível 2: stack aplicado no moto (19 recursos, 8 verificações), também no CI
-- [ ] `make apply` na conta real
-- [ ] Nível 3: `make smoke-test` (arquivo JSON no bronze, tabela no Glue, consulta pelo workgroup)
+- [x] `make apply` na conta real: 19 recursos (2 buckets, 1 database, 1 workgroup, 4 parâmetros)
+- [x] Nível 3: `make smoke-test` passou (arquivo JSON no bronze, tabela no Glue, consulta pelo workgroup, limpeza completa)
 
 **3b — Silver** ⬜ (antes da camada 5)
 - [ ] Decidir o armazenamento: bucket comum ou S3 Tables ([ADR-0014](docs/decisoes/0014-s3-tables-na-silver.md))
@@ -332,5 +332,6 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Repositórios publicados na organização [lab-data-platform](https://github.com/lab-data-platform), com commits no padrão Conventional Commits |
 | 2026-11-02 | Primeiro CI (GitHub Actions) e proteção da `main` no `data-foundation`, feitos pelo usuário com acompanhamento |
 | 2026-11-02 | ✅ Camada 2 concluída: pre-commit com gitleaks, job `pre-commit` no CI e `main` protegida nos 4 repositórios |
+| 2026-11-02 | ✅ Etapa 3a concluída: bronze aplicado na conta (19 recursos) e aprovado no smoke test |
 | 2026-11-02 | Deploy automático pelo GitHub Actions avaliado e adiado: o OIDC está bloqueado no plano gratuito |
 | 2026-11-02 | Camada 3: escopo confirmado; o lakehouse passa a ser construído camada a camada, começando pelo bronze (código pronto e testado no moto). S3 Tables na silver registrado como ADR-0014 (proposto) |

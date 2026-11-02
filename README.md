@@ -36,7 +36,7 @@ Um repositório Git por componente, todos dentro do workspace `lab-data-engineer
 |---|---|---|---|
 | [data-platform](https://github.com/lab-data-platform/data-platform) | Hub: arquitetura, convenções, contratos, ADRs | — | ✅ |
 | [data-foundation](https://github.com/lab-data-platform/data-foundation) | State remoto, budget, alertas, rede base | 1, 6 | ✅ camada 1 aplicada |
-| [data-lakehouse](https://github.com/lab-data-platform/data-lakehouse) | S3, Glue, Athena e o dbt do lake | 3, 5 | ⬜ |
+| [data-lakehouse](https://github.com/lab-data-platform/data-lakehouse) | S3, Glue, Athena e o dbt do lake | 3, 5 | ⏳ bronze aplicado |
 | [data-ingestion](https://github.com/lab-data-platform/data-ingestion) | Lambdas e Step Functions por fonte | 4 | ⬜ |
 
 Os repositórios das camadas 7 em diante (orquestração, warehouse, analytics, governança) são criados quando cada camada começar.
