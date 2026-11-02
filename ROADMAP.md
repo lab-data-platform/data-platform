@@ -165,7 +165,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Entregáveis**
 - [ ] Escopo confirmado e **fontes definidas** (é aqui que estudamos o dado: APIs, formato, volume, frequência, histórico)
-- [ ] **Estrutura do repositório** proposta no README (em revisão): `sdk/` (core, adapters, layers, governance, runtime), `extract/`, `assets/`, `pipelines/`, `infra/`, `tests/` e `local/`
+- [x] **Estrutura do repositório** aprovada no README (2026-11-02): `sdk/` (core, adapters, layers, governance, runtime), `extract/`, `assets/`, `pipelines/`, `infra/`, `tests/` e `local/`
 - [ ] **Contrato ODCS** de cada asset em `assets/<camada>/<domínio>/<fonte>/<entidade>.yml`, validado pelo `datacontract lint` e pelas extensões da plataforma no pre-commit e no CI ([assets](docs/assets.md#3-contrato-odcs))
 - [ ] **Lib de assets** `labdata.assets`, lida dos contratos, com os nomes físicos derivados do ID ([assets](docs/assets.md#4-lib-de-assets))
 - [ ] **Linhagem OpenLineage** em toda execução, com **Marquez local** para ver o grafo ([assets](docs/assets.md#5-linhagem-openlineage))
@@ -358,4 +358,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Camada 3: escopo confirmado; o lakehouse passa a ser construído camada a camada, começando pelo bronze (código pronto e testado no moto). S3 Tables na silver registrado como ADR-0014 (proposto) |
 | 2026-11-02 | Governança: contrato de dados por asset, eventos `AssetUpdated`, auditoria com CloudTrail e fluxo com `develop` (ADRs 0015 a 0018); etapa 1b da fundação pronta na `develop` |
 | 2026-11-02 | ✅ Etapa 1b concluída: barramento `lab-data-dev-assets`, archive e trilha `lab-data-dev-audit` (multirregião) aplicados |
-| 2026-11-02 | Orquestração serverless (ADR-0019, substitui o ADR-0004) e padrão de assets com ID de 4 partes, ODCS v3.2.0, lib `labdata.assets` e OpenLineage (ADR-0020, substitui o ADR-0016); estrutura do `data-ingestion` proposta no README |
+| 2026-11-02 | Orquestração serverless (ADR-0019, substitui o ADR-0004) e padrão de assets com ID de 4 partes, ODCS v3.2.0, lib `labdata.assets` e OpenLineage (ADR-0020, substitui o ADR-0016); estrutura do `data-ingestion` aprovada |
