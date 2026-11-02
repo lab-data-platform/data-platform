@@ -46,7 +46,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 4 | [Ingestão](#camada-4--ingestão) | `data-ingestion` | ⬜ |
 | 5 | [Transformação no lake](#camada-5--transformação-no-lake) | `data-lakehouse` | ⬜ |
 | 6 | [Rede e segurança base](#camada-6--rede-e-segurança-base) | `data-foundation` | ⬜ |
-| 7 | [Orquestração com Airflow](#camada-7--orquestração-com-airflow) | a criar | ⬜ |
+| 7 | [Orquestração com Airflow](#camada-7--orquestração-com-airflow) (alternativa) | a criar | 💭 |
 | 8 | [Data Warehouse](#camada-8--data-warehouse) | a criar | ⛔ |
 | 9 | [Analytics](#camada-9--analytics) | a criar | ⛔ |
 | 10 | [Qualidade e observabilidade](#camada-10--qualidade-e-observabilidade) | todos | ⬜ |
@@ -165,22 +165,25 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Entregáveis**
 - [ ] Escopo confirmado e **fontes definidas** (é aqui que estudamos o dado: APIs, formato, volume, frequência, histórico)
-- [ ] **Contrato de dados** de cada asset no `assets.yml` (schema, dono, classificação, frescor, qualidade), validado pelo JSON Schema no pre-commit e no CI ([governança](docs/governanca.md#1-contrato-de-dados-por-asset))
-- [ ] **Colunas técnicas** (`_ingested_at`, `_source`, `_run_id`, `_source_file`) e manifesto ao lado de cada arquivo do bronze
+- [ ] **Estrutura do repositório** proposta no README (em revisão): `sdk/` (core, adapters, layers, governance, runtime), `sources/`, `assets/`, `pipelines/`, `infra/`, `tests/` e `local/`
+- [ ] **Contrato ODCS** de cada asset em `assets/<camada>/<domínio>/<fonte>/<entidade>.yml`, validado pelo `datacontract lint` e pelas extensões da plataforma no pre-commit e no CI ([assets](docs/assets.md#3-contrato-odcs))
+- [ ] **Lib de assets** `labdata.assets`, lida dos contratos, com os nomes físicos derivados do ID ([assets](docs/assets.md#4-lib-de-assets))
+- [ ] **Linhagem OpenLineage** em toda execução, com **Marquez local** para ver o grafo ([assets](docs/assets.md#5-linhagem-openlineage))
+- [ ] **Colunas técnicas** (`_ingested_at`, `_source`, `_run_id`, `_source_file`, `_partition`) no manifesto ao lado de cada arquivo do bronze
 - [ ] **Validação e quarentena**: o que falha vai para `_quarantine/` e gera alerta
 - [ ] **Evento `AssetUpdated`** no fim de cada execução com sucesso ([eventos](docs/eventos.md))
 - [ ] Tag `Classification` nos recursos de cada asset
-- [ ] Módulo Terraform reutilizável `infra/modules/source/`: Lambda, role IAM, state machine e tabela bronze. Uma fonte nova é uma instância nova do módulo
+- [ ] Módulo Terraform reutilizável `infra/modules/pipeline/`, instanciado para cada arquivo de `pipelines/**/*.yml`: Lambda, role IAM, state machine, agenda e tabela bronze
 - [ ] Consumo dos contratos do `data-foundation` (alertas) e do `data-lakehouse` (bucket e database do bronze)
 - [ ] State machine no Step Functions por fonte: extrair → validar → registrar, com retry e alerta de falha
-- [ ] Código das Lambdas em `src/financeiro/<fonte>/`
-- [ ] Testes: pytest com moto (nível 1), Lambda, S3 e Step Functions no moto em Docker (nível 2) e execução real no `dev` (nível 3)
+- [ ] Pacote Python `labdata` (`src/labdata/`): o `sdk` comum e as fontes em `sources/<domínio>/<fonte>/<entidade>.py`
+- [ ] Testes: pytest com moto (nível 1), Lambda no container oficial da AWS + moto em Docker (nível 2) e execução real no `dev` (nível 3)
 - [ ] Carga histórica (backfill) e carga incremental, idempotentes ([governança](docs/governanca.md#5-idempotência-e-reprocessamento))
 - [ ] Runbooks: ingestão com falha, reprocessar um período, dado em quarentena
 
 **Pronto quando:** cada fonte tem dados no bronze, consultáveis pelo Athena, com contrato de dados declarado; uma reexecução do mesmo dia não duplica nada; o `AssetUpdated` chega ao barramento; dado inválido vai para a quarentena.
 
-**Em aberto:** quais fontes e entidades entram primeiro; agendamento provisório (EventBridge) até o Airflow existir.
+**Em aberto:** quais fontes e entidades entram primeiro (recomendado: BCB SGS na 4a); formato no bronze (recomendado: arquivo como veio + manifesto); agendamento (recomendado: EventBridge Scheduler diário).
 
 ---
 
@@ -221,9 +224,9 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 ### Camada 7 — Orquestração com Airflow
 
-⬜ **Não iniciada.** Repositório: a criar (ex.: `data-orchestration`).
+💭 **Implementação alternativa**, adotada só se houver necessidade. A orquestração da plataforma é serverless ([ADR-0019](docs/decisoes/0019-orquestracao-serverless.md)). Repositório: a criar (ex.: `data-orchestration`).
 
-**Objetivo:** um orquestrador comandando o fluxo de ponta a ponta.
+**Objetivo:** o Airflow como mais um consumidor dos eventos `AssetUpdated`, rodando as mesmas fontes do `labdata` com um runtime de Airflow.
 
 **Entregáveis**
 - [ ] EC2 t3.medium, role e agenda de liga/desliga
@@ -282,7 +285,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [ ] `dbt source freshness` e testes de qualidade de negócio
 - [ ] Alarmes no CloudWatch (falha de Lambda, Step Functions e Airflow) publicando no tópico `lab-data-dev-alerts`
 - [ ] Dashboard operacional no CloudWatch
-- [ ] Alarme de frescor por asset, a partir do `frescor_esperado` do contrato e dos eventos `AssetUpdated`
+- [ ] Alarme de frescor por asset, a partir do `slaProperties` (`freshness`) do contrato ODCS e dos eventos `AssetUpdated`
 - [ ] Eventos do Glue Data Catalog capturados para auditoria (tabela alterada fora de um pipeline)
 
 **Pronto quando:** atraso ou falha em qualquer camada gera alerta por e-mail.
@@ -298,7 +301,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 **Entregáveis**
 - [ ] `dbt docs` dos dois projetos publicado como site estático
 - [ ] Catálogo de metadados (OpenMetadata ou SageMaker Unified Studio), com conectores para Glue, Athena, DW, dbt e Airflow
-- [ ] Linhagem de ponta a ponta, donos e glossário do domínio financeiro, a partir dos `assets.yml`
+- [ ] Linhagem de ponta a ponta, donos e glossário do domínio financeiro, a partir dos contratos ODCS e dos eventos OpenLineage
 - [ ] Lake Formation, se ainda não tiver entrado na camada 3
 
 **Em aberto:** qual catálogo usar.
@@ -355,3 +358,4 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Camada 3: escopo confirmado; o lakehouse passa a ser construído camada a camada, começando pelo bronze (código pronto e testado no moto). S3 Tables na silver registrado como ADR-0014 (proposto) |
 | 2026-11-02 | Governança: contrato de dados por asset, eventos `AssetUpdated`, auditoria com CloudTrail e fluxo com `develop` (ADRs 0015 a 0018); etapa 1b da fundação pronta na `develop` |
 | 2026-11-02 | ✅ Etapa 1b concluída: barramento `lab-data-dev-assets`, archive e trilha `lab-data-dev-audit` (multirregião) aplicados |
+| 2026-11-02 | Orquestração serverless (ADR-0019, substitui o ADR-0004) e padrão de assets com ID de 4 partes, ODCS v3.2.0, lib `labdata.assets` e OpenLineage (ADR-0020, substitui o ADR-0016); estrutura do `data-ingestion` proposta no README |
