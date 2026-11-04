@@ -1,6 +1,6 @@
 # ADR-0020 — Padrão de assets: identidade, ODCS, lib e OpenLineage
 
-- **Status:** Aceito
+- **Status:** Aceito; o item 1 (identidade) foi substituído pelo [ADR-0021](0021-identidade-de-asset-como-caminho.md)
 - **Data:** 2026-11-02
 - **Camada:** Todas
 - **Substitui:** [ADR-0016](0016-contrato-de-dados-por-asset.md) (contrato em formato próprio, `assets.yml`)

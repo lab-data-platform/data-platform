@@ -30,4 +30,5 @@ Cada decisão relevante vira um **ADR** (*Architecture Decision Record*): um reg
 | [0017](0017-auditoria-cloudtrail.md) | Trilha de auditoria da conta com CloudTrail | Aceito |
 | [0018](0018-fluxo-de-branches-com-develop.md) | Fluxo de branches com develop de integração | Aceito |
 | [0019](0019-orquestracao-serverless.md) | Orquestração serverless: Step Functions, Lambda e eventos | Aceito |
-| [0020](0020-padrao-de-assets.md) | Padrão de assets: identidade, ODCS, lib e OpenLineage | Aceito |
+| [0020](0020-padrao-de-assets.md) | Padrão de assets: identidade, ODCS, lib e OpenLineage | Aceito (identidade substituída por 0021) |
+| [0021](0021-identidade-de-asset-como-caminho.md) | Identidade de asset como caminho, sem domínio | Aceito |
