@@ -46,7 +46,7 @@ Regras:
 - Antes de aplicar, a tabela fica como **"Recursos na AWS (previstos)"**.
 - Referência: [data-foundation/README.md](../../data-foundation/README.md#recursos-na-aws).
 
-**Plataforma × domínio:** a plataforma é o que todo domínio usa (buckets, catálogo, workgroup, orquestrador, alertas). O domínio é o que é específico de uma área (fontes, transformações e modelos de dados dela). Dentro de cada repositório, o código é organizado por domínio, por exemplo `data-ingestion/src/financeiro/bcb/`.
+**Plataforma × domínio:** a plataforma é o que todo domínio usa (buckets, catálogo, workgroup, orquestrador, alertas). O domínio é o que é específico de uma área (fontes, transformações e modelos de dados dela). Dentro de cada repositório, o código e os contratos são organizados pela **origem** do dado (`<origem>/<níveis...>/<entidade>`, ex.: `data-ingestion/src/labdata/extractors/bcb/sgs.py`); o domínio é só metadado do contrato e tag, para poder ser corrigido sem mover nada ([ADR-0021](decisoes/0021-identidade-de-asset-como-caminho.md)).
 
 ## Branches
 
@@ -97,6 +97,17 @@ Regras:
 - **Um assunto por commit.** Mudanças que atravessam repositórios viram um commit em cada um, na ordem de dependência.
 - **Mudança que quebra contrato** leva `!` depois do tipo, por exemplo `feat(infra)!: renomeia parâmetro do contrato`, e explica o impacto no corpo.
 
+## Idioma
+
+Regra completa no [ADR-0022](decisoes/0022-idioma-dos-nomes.md):
+
+| O quê | Idioma |
+|---|---|
+| Código: classes, funções, propriedades, variáveis, módulos, pacotes, nomes dos testes | Inglês |
+| Dados e configuração: chaves de YAML/JSON, campos de contrato, evento e manifesto, valores enumerados, partições, colunas técnicas, variáveis de ambiente e do Makefile | Inglês |
+| Colunas e valores que vêm da fonte (bronze) | Nome original |
+| Documentação, docstrings, comentários, logs, mensagens de erro, descrições, commits | Português do Brasil |
+
 ## Nomes de recursos
 
 | Recurso | Padrão | Exemplo |
@@ -104,7 +115,7 @@ Regras:
 | Prefixo geral | `<platform>-<env>` | `lab-data-dev` |
 | Bucket S3 | `<platform>-<env>-<camada>-<account_id>` | `lab-data-dev-bronze-<account_id>` |
 | Database do Glue | `<platform>_<env>_<camada>` (com `_`, porque o Athena não aceita `-`) | `lab_data_dev_silver` |
-| Tabela | `<fonte>_<entidade>` em `snake_case` | `cvm_inf_diario` |
+| Tabela | o caminho do asset com `_` ([assets](assets.md#2-nomes-físicos-derivados)) | `bcb_sgs_cdi_diario` |
 | Lambda / State machine | `<prefixo>-<função>` | `lab-data-dev-ingest-bcb` |
 | Tópico SNS | `<prefixo>-<finalidade>` | `lab-data-dev-alerts` |
 | Budget | `<prefixo>-mensal` | `lab-data-dev-mensal` |
@@ -125,7 +136,7 @@ Aplicadas automaticamente pelo `default_tags` do provider de cada repositório. 
 | `Repository` | nome do repositório, ex.: `data-foundation` | Aponta para o código de origem |
 | `Domain` | ex.: `financeiro` | Agrupa o custo por domínio (só em recursos de domínio) |
 | `Layer` | `bronze`, `silver`, `gold`, `athena-results` | Camada de dado do recurso |
-| `Classification` | `publico`, `interno`, `confidencial`, `pessoal` | Classificação do dado ([governança](governanca.md#2-classificação)); em recursos que guardam dados de um asset |
+| `Classification` | `public`, `internal`, `confidential`, `personal` | Classificação do dado ([governança](governanca.md#2-classificação)); em recursos que guardam dados de um asset |
 
 ## Camadas de dados (arquitetura medalhão)
 

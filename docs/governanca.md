@@ -8,7 +8,7 @@ Políticas que valem para **todo dado** da plataforma. As [convenções](convenc
 
 ## 1. Contrato de dados por asset
 
-Cada asset tem um **contrato de dados no padrão ODCS v3.2.0**, num arquivo `assets/<camada>/<domínio>/<fonte>/<entidade>.yml` do repositório que o produz ([ADR-0020](decisoes/0020-padrao-de-assets.md)). O contrato diz o que o asset é, quem responde por ele e o que os consumidores podem esperar.
+Cada asset tem um **contrato de dados no padrão ODCS v3.2.0**, num arquivo `assets/<camada>/<origem>/<níveis...>/<entidade>.yml` do repositório que o produz ([ADR-0020](decisoes/0020-padrao-de-assets.md)). O contrato diz o que o asset é, quem responde por ele e o que os consumidores podem esperar.
 
 | O contrato declara | Campo ODCS |
 |---|---|
@@ -23,16 +23,16 @@ O formato completo, um exemplo validado e as regras de validação estão em [as
 
 ## 2. Classificação
 
-Todo asset tem uma classificação, que vai na `customProperties` `classificacao` do contrato e na tag `Classification` dos recursos dele.
+Todo asset tem uma classificação, que vai na `customProperties` `classification` do contrato e na tag `Classification` dos recursos dele.
 
 | Classificação | O que é | Exemplo | Regras |
 |---|---|---|---|
-| `publico` | Dado já público na origem | Séries do BCB, dados abertos da CVM | Sem restrição de leitura na plataforma |
-| `interno` | Dado derivado, de uso da plataforma | Métricas operacionais, tabelas intermediárias | Leitura só por componentes da plataforma |
-| `confidencial` | Dado de negócio sensível | Carteira de um cliente | Acesso nominal; entra no Lake Formation (camada 11) |
-| `pessoal` | Dado pessoal (LGPD) | CPF, nome, e-mail | Como `confidencial`, mais mascaramento fora da silver e retenção mínima |
+| `public` | Dado já público na origem | Séries do BCB, dados abertos da CVM | Sem restrição de leitura na plataforma |
+| `internal` | Dado derivado, de uso da plataforma | Métricas operacionais, tabelas intermediárias | Leitura só por componentes da plataforma |
+| `confidential` | Dado de negócio sensível | Carteira de um cliente | Acesso nominal; entra no Lake Formation (camada 11) |
+| `personal` | Dado pessoal (LGPD) | CPF, nome, e-mail | Como `confidential`, mais mascaramento fora da silver e retenção mínima |
 
-Hoje só há dados `publico`. As regras de `confidencial` e `pessoal` existem antes do primeiro dado desse tipo, e não depois.
+Hoje só há dados `public`. As regras de `confidential` e `personal` existem antes do primeiro dado desse tipo, e não depois.
 
 ## 3. Colunas técnicas
 
@@ -44,7 +44,7 @@ Toda tabela, do bronze em diante, carrega as mesmas colunas de controle. No bron
 | `_source` | Fonte e entidade (ex.: `bcb.sgs`) | Saber de onde veio |
 | `_run_id` | ID da execução que produziu o dado (ARN da execução no Step Functions) | Rastrear até o log da execução |
 | `_source_file` | Caminho do arquivo de origem no bronze | Linhagem por linha e reprocessamento |
-| `_partition` | Partição de onde a linha veio (ex.: `serie=432/ingestion_date=2026-11-02`) | Reprocessar e substituir só a partição certa |
+| `_partition` | Partição de onde a linha veio (ex.: `reference_date=2026-11-02`) | Reprocessar e substituir só a partição certa |
 
 ## 4. Validação e quarentena
 
@@ -64,12 +64,12 @@ Toda tabela, do bronze em diante, carrega as mesmas colunas de controle. No bron
 
 | Camada | Retenção | Por quê |
 |---|---|---|
-| Bronze | Indefinida para dado `publico`; versões antigas por 30 dias | É a fonte de verdade para reprocessar. Revisar quando o volume crescer (transição para Glacier) |
+| Bronze | Indefinida para dado `public`; versões antigas por 30 dias | É a fonte de verdade para reprocessar. Revisar quando o volume crescer (transição para Glacier) |
 | Silver e gold | Indefinida; o Iceberg mantém os snapshots conforme a manutenção (`expire_snapshots`) | Recriáveis a partir do bronze |
 | Resultados do Athena | 7 dias | Só servem para quem acabou de consultar |
 | Eventos de assets (archive) | 90 dias | Auditoria e replay de curto prazo |
 | Logs de auditoria (CloudTrail) | 365 dias | Investigação de incidentes |
-| Dado `pessoal` | O mínimo necessário à finalidade, definido no contrato | LGPD |
+| Dado `personal` | O mínimo necessário à finalidade, definido no contrato | LGPD |
 
 ## 7. Segredos
 
@@ -80,13 +80,13 @@ Toda tabela, do bronze em diante, carrega as mesmas colunas de controle. No bron
 
 ## 8. Evolução de schema
 
-O campo `version` do contrato ODCS (publicado como `versao_contrato` no evento) segue o versionamento semântico:
+O campo `version` do contrato ODCS (publicado como `contract_version` no evento) segue o versionamento semântico:
 
 | Mudança | Tipo | Versão | O que fazer |
 |---|---|---|---|
 | Coluna nova, opcional | compatível | `1.0.0 → 1.1.0` | Atualizar o contrato |
 | Descrição ou regra de qualidade mais branda | compatível | `1.0.0 → 1.0.1` | Atualizar o contrato |
-| Coluna removida, renomeada ou com tipo alterado | **quebra** | `1.0.0 → 2.0.0` | Avisar os consumidores (quem tem o asset no `depende_de`), commit com `!` (`feat!:`), período de convivência das duas versões |
+| Coluna removida, renomeada ou com tipo alterado | **quebra** | `1.0.0 → 2.0.0` | Avisar os consumidores (quem tem o asset no `depends_on`), commit com `!` (`feat!:`), período de convivência das duas versões |
 | Mudança na fonte que quebra a validação | detectada | — | Quarentena + alerta; o contrato é revisado antes de liberar |
 
 ## 9. Auditoria

@@ -1,12 +1,12 @@
 # Padrão de assets
 
-Todo dado da plataforma é um **asset**: tem uma identidade única, um contrato e uma linhagem, **independentemente da ferramenta que o produz** (Lambda, dbt ou Airflow). Trocar a ferramenta muda só quem produz; a identidade, os consumidores e a linhagem continuam os mesmos ([ADR-0020](decisoes/0020-padrao-de-assets.md)).
+Todo dado da plataforma é um **asset**: tem uma identidade única, um contrato e uma linhagem, **independentemente da ferramenta que o produz** (Lambda, dbt ou Airflow). Trocar a ferramenta muda só quem produz; a identidade, os consumidores e a linhagem continuam os mesmos ([ADR-0020](decisoes/0020-padrao-de-assets.md); identidade revista no [ADR-0021](decisoes/0021-identidade-de-asset-como-caminho.md)).
 
 | Peça | Padrão | Onde vive |
 |---|---|---|
-| **Identidade** | ID `<camada>.<domínio>.<fonte>.<entidade>` e nomes físicos derivados dele | Regra neste documento |
+| **Identidade** | ID `<camada>.<origem>[.<nível>...].<entidade>` (um caminho) e nomes físicos derivados dele | Regra neste documento |
 | **Contrato** | **ODCS v3.2.0** (Open Data Contract Standard), mais as extensões da plataforma | `assets/` do repositório produtor |
-| **Lib** | `labdata.assets.<camada>.<domínio>.<fonte>`, gerada a partir dos contratos | `src/labdata/assets/` do repositório produtor |
+| **Lib** | `labdata.assets.<camada>.<origem>[.<nível>...]`, lida dos contratos | `src/labdata/assets/` do repositório produtor |
 | **Linhagem** | **OpenLineage**, emitido a cada execução | Catálogo de metadados (Marquez local; OpenMetadata ou DataHub na camada 11) |
 | **Disparo** | Evento `AssetUpdated` | Barramento `lab-data-<env>-assets` ([eventos](eventos.md)) |
 
@@ -16,88 +16,104 @@ O "lugar único" para ver tudo junto é o **catálogo de metadados**, que recebe
 
 ## 1. Identidade
 
-```
-<camada>.<domínio>.<fonte>.<entidade>
-```
-
-| Parte | Valores | Exemplo |
-|---|---|---|
-| `camada` | `source` (fonte externa: API, arquivo, banco, FTP), `bronze`, `silver`, `gold`, `dw`, `dashboard` | `bronze` |
-| `domínio` | Área de negócio | `financeiro` |
-| `fonte` | Origem (nas camadas `source` e `bronze`) ou assunto (nas camadas seguintes) | `bcb`, `mercado` |
-| `entidade` | O dado em si | `sgs`, `indicador_diario` |
-
-Tudo em minúsculas e `snake_case`. Exemplos de uma cadeia completa:
+O ID de um asset é um **caminho**, de tamanho variável:
 
 ```
-source.financeiro.bcb.sgs  ──►  bronze.financeiro.bcb.sgs  ──►  silver.financeiro.bcb.indicadores
-   (externo)                       (Lambda, data-ingestion)        (dbt, data-lakehouse)
-                                                                          │
-                       dw.financeiro.mercado.fato_indicador_diario  ◄──  gold.financeiro.mercado.indicador_diario
+<camada>.<origem>[.<nível>...].<entidade>
 ```
 
-**Unicidade:** cada repositório é dono das fontes que ingere (o `bcb` é do `data-ingestion`), e os nomes físicos são derivados do ID. Dois assets com o mesmo ID quebram o CI do repositório; entre repositórios, aparecem como conflito no catálogo.
+| Parte | Obrigatória | O que é | Exemplo |
+|---|---|---|---|
+| `camada` | sim | `source` (fonte externa: API, arquivo, banco, FTP), `bronze`, `silver`, `gold`, `dw`, `dashboard` | `bronze` |
+| `origem` | sim | Quem publica o dado (nas camadas `source` e `bronze`) ou o assunto (nas camadas seguintes) | `bcb`, `cvm`, `mercado` |
+| `nível` | de 0 a 4 | Sistema, subsistema ou conjunto dentro da origem, quantos ela precisar | `sgs`; `fi` e `doc` |
+| `entidade` | sim | O dado em si | `cdi_diario`, `inf_diario` |
+
+Tudo em minúsculas e `snake_case`. A profundidade acompanha a estrutura de cada origem, sem forçar nenhuma num formato fixo:
+
+| Caso | ID |
+|---|---|
+| Origem simples | `bronze.ibge.populacao` |
+| Origem com sistema | `bronze.bcb.sgs.cdi_diario` |
+| Sistema com subsistema | `bronze.cvm.fi.doc.inf_diario` |
+| Assunto na gold | `gold.mercado.taxas.indicador_diario` |
+
+Uma cadeia completa:
+
+```
+source.bcb.sgs.cdi_diario  ──►  bronze.bcb.sgs.cdi_diario  ──►  silver.bcb.sgs.cdi  ──►  gold.mercado.taxas.indicador_diario
+   (externo)                       (Lambda, data-ingestion)       (dbt, data-lakehouse)        (dbt, data-lakehouse)
+```
+
+**O domínio não faz parte do ID.** Ele é uma classificação de negócio e pode ser corrigido; o ID precisa ser estável. O domínio fica no campo `domain` do contrato e na tag `Domain` dos recursos: corrigi-lo não renomeia nenhum asset, pasta, tabela ou consumidor.
+
+**Unicidade:** cada repositório é dono das origens que ingere (o `bcb` é do `data-ingestion`), e os nomes físicos são derivados do caminho inteiro. Dois assets com o mesmo ID quebram o CI do repositório; entre repositórios, aparecem como conflito no catálogo.
 
 ## 2. Nomes físicos derivados
 
-Ninguém inventa nome físico: todos saem do ID, por regra.
+Ninguém inventa nome físico: todos saem do caminho, pela mesma regra, seja qual for a profundidade.
 
-| A partir de `bronze.financeiro.bcb.sgs` | Regra | Resultado |
-|---|---|---|
-| Prefixo no S3 | `<domínio>/<fonte>/<entidade>/` no bucket da camada | `s3://lab-data-dev-bronze-<account_id>/financeiro/bcb/sgs/` |
-| Tabela no Glue | `lab_data_<env>_<camada>.<fonte>_<entidade>` | `lab_data_dev_bronze.bcb_sgs` |
-| URI (Airflow `Asset`, catálogo) | `labdata://<camada>/<domínio>/<fonte>/<entidade>` | `labdata://bronze/financeiro/bcb/sgs` |
-| `source` do dbt | `source('<camada>_<domínio>', '<fonte>_<entidade>')` | `source('bronze_financeiro', 'bcb_sgs')` |
-| Identidade OpenLineage | `namespace = s3://<bucket>`, `name = <prefixo>` | `s3://lab-data-dev-bronze-<account_id>` · `financeiro/bcb/sgs` |
-| Evento | `detail.asset` = ID | `bronze.financeiro.bcb.sgs` |
+| Derivado | Regra | `bronze.bcb.sgs.cdi_diario` | `bronze.cvm.fi.doc.inf_diario` |
+|---|---|---|---|
+| Contrato | `assets/<camada>/<caminho>.yml` | `assets/bronze/bcb/sgs/cdi_diario.yml` | `assets/bronze/cvm/fi/doc/inf_diario.yml` |
+| Pipeline (ingestão) | `pipelines/<caminho>.yml` | `pipelines/bcb/sgs/cdi_diario.yml` | `pipelines/cvm/fi/doc/inf_diario.yml` |
+| Prefixo no S3 (bucket da camada) | `<caminho>/` | `bcb/sgs/cdi_diario/` | `cvm/fi/doc/inf_diario/` |
+| Tabela no Glue (`lab_data_<env>_<camada>`) | caminho com `_` | `bcb_sgs_cdi_diario` | `cvm_fi_doc_inf_diario` |
+| URI (Airflow `Asset`, catálogo) | `labdata://<camada>/<caminho>` | `labdata://bronze/bcb/sgs/cdi_diario` | `labdata://bronze/cvm/fi/doc/inf_diario` |
+| Lib | `labdata.assets.<camada>.<caminho sem a entidade>` | `labdata.assets.bronze.bcb.sgs` → `cdi_diario` | `labdata.assets.bronze.cvm.fi.doc` → `inf_diario` |
+| `source` do dbt | `source('<camada>_<origem>', '<caminho com _>')` | `source('bronze_bcb', 'bcb_sgs_cdi_diario')` | `source('bronze_cvm', 'cvm_fi_doc_inf_diario')` |
+| Identidade OpenLineage | `namespace = s3://<bucket>`, `name = <caminho>` | `bcb/sgs/cdi_diario` | `cvm/fi/doc/inf_diario` |
+| Evento | `detail.asset` = ID | `bronze.bcb.sgs.cdi_diario` | `bronze.cvm.fi.doc.inf_diario` |
+
+O limite de 4 níveis intermediários existe para os nomes físicos não ficarem longos demais; se uma origem precisar de mais, muda uma linha no schema.
 
 ## 3. Contrato (ODCS)
 
 Cada asset tem **um arquivo** no padrão **ODCS v3.2.0**, no repositório que o produz:
 
 ```
-assets/<camada>/<domínio>/<fonte>/<entidade>.yml
+assets/<camada>/<origem>/<níveis...>/<entidade>.yml
 ```
 
 ```yaml
 apiVersion: v3.2.0
 kind: DataContract
-id: bronze.financeiro.bcb.sgs          # ID da plataforma
-name: Séries do SGS (bronze)
+id: bronze.bcb.sgs.cdi_diario          # ID da plataforma (o caminho)
+name: CDI diário (bronze)
 version: 1.0.0                         # versão do contrato (semver, ver governança §8)
 status: active
-domain: financeiro
+domain: financeiro                     # classificação de negócio: fica aqui, e não no ID
 team:
   name: data-ingestion                 # repositório dono
 description:
-  purpose: Séries temporais do Banco Central como vieram da API, por série e data de ingestão.
-  usage: Fonte da silver.financeiro.bcb.indicadores.
+  purpose: Observação diária do CDI (SGS série 12) exatamente como veio da API do Banco Central.
+  usage: Fonte da silver do domínio financeiro.
 tags: [bronze, bcb]
 servers:
   - server: bronze
     type: s3
     environment: dev
-    location: s3://lab-data-dev-bronze-<account_id>/financeiro/bcb/sgs/
+    location: s3://lab-data-dev-bronze-<account_id>/bcb/sgs/cdi_diario/
     format: json
 schema:
-  - name: sgs
-    physicalName: bcb_sgs
+  - name: cdi_diario
+    physicalName: bcb_sgs_cdi_diario
     logicalType: object
-    description: Uma observação de uma série do SGS.
+    description: A observação do dia da partição.
     properties:
       - { name: data,  logicalType: string, physicalType: string, required: true, description: "Data da observação (dd/mm/aaaa)." }
       - { name: valor, logicalType: string, physicalType: string, required: true, description: "Valor da série, como texto." }
     quality:
-      - { type: library, metric: rowCount, mustBeGreaterThan: 0, description: "O arquivo tem pelo menos uma observação." }
+      - { type: library, metric: rowCount, mustBe: 1, description: "Cada partição tem exatamente a observação do dia." }
 slaProperties:
-  - { property: freshness, value: 1, unit: d }      # sem AssetUpdated em 1 dia = alerta
+  - { property: freshness, value: 4, unit: d }      # sem AssetUpdated em 4 dias = alerta (cobre feriado prolongado)
 customProperties:                                   # extensões da plataforma (obrigatórias)
-  - { property: classificacao, value: publico }
-  - { property: criticidade,   value: media }
-  - { property: depende_de,    value: [source.financeiro.bcb.sgs] }
-  - { property: disparo,       value: todos }
-  - property: produzido_por
-    value: { ferramenta: lambda, repositorio: data-ingestion, referencia: pipelines/financeiro/bcb/sgs.yml }
+  - { property: classification, value: public }
+  - { property: criticality,    value: medium }
+  - { property: depends_on,     value: [source.bcb.sgs.cdi_diario] }
+  - { property: trigger,        value: all }
+  - property: produced_by
+    value: { tool: lambda, repository: data-ingestion, reference: pipelines/bcb/sgs/cdi_diario.yml }
 ```
 
 ### Extensões da plataforma (`customProperties`)
@@ -106,11 +122,11 @@ O ODCS prevê `customProperties` para o que é específico de cada organização
 
 | Propriedade | Valores | Para quê |
 |---|---|---|
-| `classificacao` | `publico`, `interno`, `confidencial`, `pessoal` | Acesso e retenção ([governança §2](governanca.md#2-classificação)) |
-| `criticidade` | `alta`, `media`, `baixa` | Prioridade dos alertas de falha e de frescor |
-| `depende_de` | Lista de IDs (vazia para `source`) | Linhagem declarada e regras de disparo |
-| `disparo` | `todos` (padrão) ou `qualquer` | Quando há várias dependências: esperar todas ou reagir a qualquer uma |
-| `produzido_por` | `{ferramenta, repositorio, referencia}`, com `ferramenta` = `lambda`, `dbt`, `airflow` ou `externo` | Quem produz, sem prender o asset à ferramenta |
+| `classification` | `public`, `internal`, `confidential`, `personal` | Acesso e retenção ([governança §2](governanca.md#2-classificação)) |
+| `criticality` | `high`, `medium`, `low` | Prioridade dos alertas de falha e de frescor |
+| `depends_on` | Lista de IDs (vazia para `source`) | Linhagem declarada e regras de disparo |
+| `trigger` | `all` (padrão) ou `any` | Quando há várias dependências: esperar todas ou reagir a qualquer uma |
+| `produced_by` | `{tool, repository, reference}`, com `tool` = `lambda`, `dbt`, `airflow` ou `external` (obrigatório em `source`) | Quem produz, sem prender o asset à ferramenta |
 
 O frescor esperado usa o campo padrão do ODCS (`slaProperties`, `property: freshness`).
 
@@ -119,7 +135,7 @@ O frescor esperado usa o campo padrão do ODCS (`slaProperties`, `property: fres
 | Verificação | Ferramenta | Onde |
 |---|---|---|
 | Formato ODCS | `datacontract lint` (datacontract-cli) | pre-commit e CI do repositório produtor |
-| Extensões e regras da plataforma (ID de 4 partes, `domain` igual ao do ID, propriedades obrigatórias) | [schemas/asset-extensions.schema.json](schemas/asset-extensions.schema.json) | pre-commit e CI |
+| Extensões e regras da plataforma (ID em caminho de 2 a 6 partes, `domain` declarado e fora do ID, propriedades obrigatórias) | [schemas/asset-extensions.schema.json](schemas/asset-extensions.schema.json) | pre-commit e CI |
 | Unicidade e dependências internas do repositório | teste em `tests/contracts/` | CI |
 
 ## 4. Lib de assets
@@ -127,13 +143,14 @@ O frescor esperado usa o campo padrão do ODCS (`slaProperties`, `property: fres
 Os contratos viram **constantes importáveis**, para nenhum código escrever um ID ou um nome físico à mão:
 
 ```python
-from labdata.assets.bronze.financeiro import bcb
+from labdata.assets.bronze.bcb import sgs
 
-bcb.sgs.id          # "bronze.financeiro.bcb.sgs"
-bcb.sgs.s3_prefix   # "financeiro/bcb/sgs/"
-bcb.sgs.table       # "bcb_sgs"
-bcb.sgs.uri         # "labdata://bronze/financeiro/bcb/sgs"
-bcb.sgs.depende_de  # ("source.financeiro.bcb.sgs",)
+sgs.cdi_diario.id          # "bronze.bcb.sgs.cdi_diario"
+sgs.cdi_diario.s3_prefix   # "bcb/sgs/cdi_diario/"
+sgs.cdi_diario.table       # "bcb_sgs_cdi_diario"
+sgs.cdi_diario.uri         # "labdata://bronze/bcb/sgs/cdi_diario"
+sgs.cdi_diario.domain      # "financeiro" (do contrato)
+sgs.cdi_diario.depends_on  # ("source.bcb.sgs.cdi_diario",)
 ```
 
 | Regra | Por quê |

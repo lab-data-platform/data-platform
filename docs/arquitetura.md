@@ -190,7 +190,7 @@ data-<componente>/
 └── README.md
 ```
 
-**Domínios:** dentro de cada repositório, o código é organizado por domínio (ex.: `data-ingestion/src/financeiro/bcb/`). Um domínio novo segue a mesma estrutura sem criar repositório novo.
+**Origens e domínios:** dentro de cada repositório, o código e os contratos são organizados pela **origem** do dado (`<origem>/<níveis...>/<entidade>`, ex.: `data-ingestion/src/labdata/extractors/bcb/sgs.py`). O domínio é metadado do contrato e tag, e não pasta: uma origem nova segue a mesma estrutura, e um domínio corrigido não move nada.
 
 ---
 
@@ -261,7 +261,7 @@ Step Functions (ingestão) ──AssetUpdated──► EventBridge lab-data-<env
                                                     │ archive (90 dias, replay)           (dbt, Airflow via SQS)
 ```
 
-- **Padrão de assets** ([ADR-0020](decisoes/0020-padrao-de-assets.md)): ID `<camada>.<domínio>.<fonte>.<entidade>`, nomes físicos derivados, contrato **ODCS** no `assets/` de cada repositório produtor, lib `labdata.assets` e linhagem **OpenLineage** ([assets.md](assets.md)).
+- **Padrão de assets** ([ADR-0020](decisoes/0020-padrao-de-assets.md)): ID em caminho `<camada>.<origem>[.<nível>...].<entidade>`, sem domínio ([ADR-0021](decisoes/0021-identidade-de-asset-como-caminho.md)), nomes físicos derivados, contrato **ODCS** no `assets/` de cada repositório produtor, lib `labdata.assets` e linhagem **OpenLineage** ([assets.md](assets.md)).
 - **Políticas** de classificação, colunas técnicas, quarentena, retenção, segredos e evolução de schema: [governanca.md](governanca.md).
 - **Auditoria** da conta com CloudTrail ([ADR-0017](decisoes/0017-auditoria-cloudtrail.md)).
 - Detalhes do evento e de como reagir a ele: [eventos.md](eventos.md).

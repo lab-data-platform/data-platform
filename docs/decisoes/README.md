@@ -32,3 +32,4 @@ Cada decisão relevante vira um **ADR** (*Architecture Decision Record*): um reg
 | [0019](0019-orquestracao-serverless.md) | Orquestração serverless: Step Functions, Lambda e eventos | Aceito |
 | [0020](0020-padrao-de-assets.md) | Padrão de assets: identidade, ODCS, lib e OpenLineage | Aceito (identidade substituída por 0021) |
 | [0021](0021-identidade-de-asset-como-caminho.md) | Identidade de asset como caminho, sem domínio | Aceito |
+| [0022](0022-idioma-dos-nomes.md) | Idioma dos nomes: código e dados em inglês, texto em português | Aceito |

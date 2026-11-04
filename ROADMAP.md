@@ -13,15 +13,16 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | | |
 |---|---|
 | **Camada atual** | 4 — Ingestão (`data-ingestion`), com a preparação de governança |
-| **Situação** | Etapa 1b (eventos e auditoria) aplicada na conta; governança documentada. Bronze (3a) no ar |
-| **Próximo passo** | Confirmar o escopo da etapa 4a (primeira fonte, formato no bronze, agendamento) |
-| **Última atualização** | 2026-11-02 |
+| **Situação** | Primeira pipeline (CDI diário) pronta e testada localmente (níveis 1 e 2, com linhagem no Marquez), com nomes padronizados em inglês (ADR-0022). Ainda sem infraestrutura da ingestão na conta |
+| **Próximo passo** | Terraform da ingestão (`data-ingestion/infra/`): Lambda, state machine, agenda, IAM, log group, tabela bronze e contrato SSM |
+| **Última atualização** | 2026-11-03 |
 
 ## ⏭️ Próximos passos
 
-1. [ ] Camada 4: confirmar o escopo da etapa 4a (primeira fonte, formato no bronze, agendamento).
-2. [ ] Camada 4: implementar a 4a na `develop` do `data-ingestion`, já com contrato de dados, colunas técnicas, quarentena e `AssetUpdated`.
-3. [ ] Levar para a `main` o que está na `develop` do `data-platform`, do `data-lakehouse` e do `data-ingestion` (sem apply).
+1. [ ] Camada 4: Terraform da ingestão em `data-ingestion/infra/`, com `terraform test`.
+2. [ ] Camada 4: CI de Python, contratos e teste local no `data-ingestion`.
+3. [ ] Deploy geral: levar a `develop` para a `main` e aplicar; primeira execução real do CDI.
+4. [ ] Aplicar a regra de idioma (ADR-0022) ao `data-foundation` e ao `data-lakehouse` (nomes de testes do Terraform e variáveis dos scripts).
 
 ## ⚠️ Pendências e bloqueios
 
@@ -165,8 +166,8 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 
 **Entregáveis**
 - [ ] Escopo confirmado e **fontes definidas** (é aqui que estudamos o dado: APIs, formato, volume, frequência, histórico)
-- [x] **Estrutura do repositório** aprovada no README (2026-11-02): `sdk/` (core, adapters, layers, governance, runtime), `extract/`, `assets/`, `pipelines/`, `infra/`, `tests/` e `local/`
-- [ ] **Contrato ODCS** de cada asset em `assets/<camada>/<domínio>/<fonte>/<entidade>.yml`, validado pelo `datacontract lint` e pelas extensões da plataforma no pre-commit e no CI ([assets](docs/assets.md#3-contrato-odcs))
+- [x] **Estrutura do repositório** aprovada no README (2026-11-02): `sdk/` (core, adapters, layers, governance, runtime), `extractors/`, `assets/`, `pipelines/`, `infra/`, `tests/` e `local/`
+- [ ] **Contrato ODCS** de cada asset em `assets/<camada>/<origem>/<níveis...>/<entidade>.yml`, validado pelo `datacontract lint` e pelas extensões da plataforma no pre-commit e no CI ([assets](docs/assets.md#3-contrato-odcs))
 - [ ] **Lib de assets** `labdata.assets`, lida dos contratos, com os nomes físicos derivados do ID ([assets](docs/assets.md#4-lib-de-assets))
 - [ ] **Linhagem OpenLineage** em toda execução, com **Marquez local** para ver o grafo ([assets](docs/assets.md#5-linhagem-openlineage))
 - [ ] **Colunas técnicas** (`_ingested_at`, `_source`, `_run_id`, `_source_file`, `_partition`) no manifesto ao lado de cada arquivo do bronze
@@ -176,7 +177,7 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 - [ ] Módulo Terraform reutilizável `infra/modules/pipeline/`, instanciado para cada arquivo de `pipelines/**/*.yml`: Lambda, role IAM, state machine, agenda e tabela bronze
 - [ ] Consumo dos contratos do `data-foundation` (alertas) e do `data-lakehouse` (bucket e database do bronze)
 - [ ] State machine no Step Functions por fonte: extrair → validar → registrar, com retry e alerta de falha
-- [ ] Pacote Python `labdata` (`src/labdata/`): o `sdk` comum, a lib `assets` e a extração de cada fonte em `extract/<domínio>/<fonte>/<entidade>.py`
+- [x] Pacote Python `labdata` (`src/labdata/`): o `sdk` comum, a lib `assets` e a extração de cada origem em `extractors/<origem>/<sistema>.py`
 - [ ] Testes: pytest com moto (nível 1), Lambda no container oficial da AWS + moto em Docker (nível 2) e execução real no `dev` (nível 3)
 - [ ] Carga histórica (backfill) e carga incremental, idempotentes ([governança](docs/governanca.md#5-idempotência-e-reprocessamento))
 - [ ] Runbooks: ingestão com falha, reprocessar um período, dado em quarentena
@@ -359,3 +360,5 @@ A plataforma é construída **uma camada por vez**. Cada camada só começa depo
 | 2026-11-02 | Governança: contrato de dados por asset, eventos `AssetUpdated`, auditoria com CloudTrail e fluxo com `develop` (ADRs 0015 a 0018); etapa 1b da fundação pronta na `develop` |
 | 2026-11-02 | ✅ Etapa 1b concluída: barramento `lab-data-dev-assets`, archive e trilha `lab-data-dev-audit` (multirregião) aplicados |
 | 2026-11-02 | Orquestração serverless (ADR-0019, substitui o ADR-0004) e padrão de assets com ID de 4 partes, ODCS v3.2.0, lib `labdata.assets` e OpenLineage (ADR-0020, substitui o ADR-0016); estrutura do `data-ingestion` aprovada |
+| 2026-11-03 | Identidade de asset passa a ser um caminho sem domínio, `<camada>.<origem>[.<nível>...].<entidade>` (ADR-0021); primeira pipeline (CDI diário) pronta e testada localmente nos níveis 1 e 2, sem infraestrutura na conta ainda |
+| 2026-11-03 | Idioma dos nomes: código e dados em inglês, texto em português (ADR-0022); `extrator/` vira `extractors/`, schemas, contratos, eventos e testes renomeados |
